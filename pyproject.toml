@@ -1,0 +1,14 @@
+[project]
+name = "samantha-os1"
+version = "0.1.0"
+description = "Samantha OS1 is a conversational AI assistant."
+readme = "README.md"
+requires-python = ">=3.12"
+
+dependencies = [
+    "chainlit==2.0.dev0",
+    "openai==1.51.2",
+    "plotly>=5.24.1",
+    "yfinance>=0.2.44",
+    "websockets==13.1",
+]

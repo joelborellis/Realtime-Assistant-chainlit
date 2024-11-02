@@ -382,6 +382,8 @@ class RealtimeClient(RealtimeEventHandler):
         self.conversation = RealtimeConversation()
         self._reset_config()
         self._add_api_event_handlers()
+
+        #print(self.default_session_config["instructions"])
         
     def _reset_config(self):
         self.session_created = False

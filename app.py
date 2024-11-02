@@ -8,6 +8,7 @@ from chainlit.logger import logger
 
 from realtime import RealtimeClient
 from realtime.tools import tools
+from realtime.utils import SESSION_INSTRUCTIONS, voice
 
 client = AsyncOpenAI()    
 
@@ -49,8 +50,10 @@ async def setup_openai_realtime():
     openai_realtime.on('conversation.item.completed', handle_item_completed)
     openai_realtime.on('conversation.interrupted', handle_conversation_interrupt)
     openai_realtime.on('error', handle_error)
+    
 
     cl.user_session.set("openai_realtime", openai_realtime)
+
     coros = [openai_realtime.add_tool(tool_def, tool_handler) for tool_def, tool_handler in tools]
     await asyncio.gather(*coros)
 
@@ -75,6 +78,8 @@ async def on_message(message: cl.Message):
 async def on_audio_start():
     try:
         openai_realtime: RealtimeClient = cl.user_session.get("openai_realtime")
+        # print(SESSION_INSTRUCTIONS)
+        await openai_realtime.update_session(instructions=SESSION_INSTRUCTIONS, voice=voice)  # this will update the session instructions and voice
         await openai_realtime.connect()
         logger.info("Connected to OpenAI realtime")
         # TODO: might want to recreate items to restore context

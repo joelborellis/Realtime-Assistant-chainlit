@@ -1,4 +1,3 @@
-import os
 import asyncio
 from openai import AsyncOpenAI
 
@@ -7,8 +6,8 @@ from uuid import uuid4
 from chainlit.logger import logger
 
 from realtime import RealtimeClient
-from realtime.tools import tools
-from realtime.utils import SESSION_INSTRUCTIONS, voice
+from agents.tools import tools
+from utils.utils import SESSION_INSTRUCTIONS, voice
 
 client = AsyncOpenAI()    
 

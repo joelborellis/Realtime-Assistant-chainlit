@@ -3,18 +3,14 @@ import chainlit as cl
 import plotly
 import os
 from pydantic import BaseModel
-from .llm import (
+from utils.llm import (
     parse_markdown_backticks,
     structured_output_prompt,
     chat_prompt,
     image_prompt,
 )
-from .utils import ModelName, model_name_to_id, timeit_decorator
+from utils.utils import ModelName, model_name_to_id, timeit_decorator
 import logging
-import requests
-from io import BytesIO
-
-# from PIL import Image
 
 # Setup logging
 logging.basicConfig(

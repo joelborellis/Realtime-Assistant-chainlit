@@ -1,7 +1,7 @@
 [project]
-name = "samantha-os1"
+name = "realtime-assistant-poc"
 version = "0.1.0"
-description = "Samantha OS1 is a conversational AI assistant."
+description = "This project is a proof of concept using the Realtime API."
 readme = "README.md"
 requires-python = ">=3.12"
 

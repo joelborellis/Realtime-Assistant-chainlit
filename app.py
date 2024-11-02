@@ -14,7 +14,7 @@ client = AsyncOpenAI()
 
 async def setup_openai_realtime():
     """Instantiate and configure the OpenAI Realtime Client"""
-    openai_realtime = RealtimeClient(api_key=os.getenv("OPENAI_API_KEY"))
+    openai_realtime = RealtimeClient()
     cl.user_session.set("track_id", str(uuid4()))
     async def handle_conversation_updated(event):
         item = event.get("item")

@@ -6,9 +6,10 @@ import inspect
 import numpy as np
 import json
 import websockets
-from datetime import datetime
+from datetime import datetime, UTC
 from collections import defaultdict
 import base64
+import uuid
 
 from chainlit.logger import logger
 from chainlit.config import config
@@ -77,26 +78,67 @@ class RealtimeEventHandler:
 
 
 class RealtimeAPI(RealtimeEventHandler):
-    def __init__(self, url=None, api_key=None):
+    def __init__(   
+        self,
+        url=None,
+        api_key=None,
+        api_version="2024-10-01-preview",
+        deployment=None,
+        ):
+
         super().__init__()
-        self.default_url = 'wss://api.openai.com/v1/realtime'
-        self.url = url or self.default_url
-        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
+        self.use_azure = os.getenv("USE_AZURE", "false").lower() == "true"
+
+        if self.use_azure:
+            self.url = url or os.getenv("AZURE_OPENAI_URL")
+            self.api_key = api_key or os.getenv("AZURE_OPENAI_API_KEY")
+            self.api_version = api_version
+            self.deployment = deployment or os.getenv(
+                "OPENAI_DEPLOYMENT_NAME_REALTIME", "gpt-4o-realtime-preview"
+            )
+            self.user_agent = "ms-rtclient-0.4.3"
+            self.request_id = uuid.uuid4()
+        else:
+            self.default_url = "wss://api.openai.com/v1/realtime"
+            self.url = url or self.default_url
+            self.api_key = api_key or os.getenv("OPENAI_API_KEY")
+
         self.ws = None
 
     def is_connected(self):
         return self.ws is not None
 
     def log(self, *args):
-        logger.debug(f"[Websocket/{datetime.utcnow().isoformat()}]", *args)
+        logger.debug(f"[Websocket/{datetime.now(UTC).isoformat()}]", *args)
 
     async def connect(self, model='gpt-4o-realtime-preview-2024-10-01'):
         if self.is_connected():
             raise Exception("Already connected")
-        self.ws = await websockets.connect(f"{self.url}?model={model}", extra_headers={
-            'Authorization': f'Bearer {self.api_key}',
-            'OpenAI-Beta': 'realtime=v1'
-        })
+        if self.use_azure:
+            if not self.url:
+                raise ValueError("Azure OpenAI URL is required")
+
+            url = f"{self.url}/openai/realtime?api-version={self.api_version}&deployment={self.deployment}"
+            print(url)
+            print(self.api_key)
+            # logger.info(f"Connecting to Azure URL: {url}")
+            self.ws = await websockets.connect(
+                url,
+                extra_headers={
+                    "api-key": self.api_key,
+                    "User-Agent": self.user_agent,
+                    "x-ms-client-request-id": str(self.request_id),
+                },
+            )
+        else:
+            # logger.info(f"Connecting to OpenAI URL: {self.url}")
+            self.ws = await websockets.connect(
+                f"{self.url}?model={model}",
+                extra_headers={
+                    "Authorization": f"Bearer {self.api_key}",
+                    "OpenAI-Beta": "realtime=v1",
+                },
+            )
         self.log(f"Connected to {self.url}")
         asyncio.create_task(self._receive_messages())
 

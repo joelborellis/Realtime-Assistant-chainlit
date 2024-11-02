@@ -2,7 +2,6 @@ import openai
 import os
 from pydantic import BaseModel
 
-
 def structured_output_prompt(
     prompt: str, response_format: BaseModel, llm_model: str = "gpt-4o-2024-08-06"
 ) -> BaseModel:
@@ -57,6 +56,36 @@ def chat_prompt(prompt: str, model: str) -> str:
     message = completion.choices[0].message
 
     return message.content
+
+def image_prompt(prompt: str, model: str) -> str:
+    """
+    Call an image generation model to generate an image.
+
+    Args:
+        prompt (str): The prompt to send to the Image generation model like Dall-e or Groq API.
+        model (str): The model ID to use for the API call.
+
+    Returns:
+        str: The assistant's response.
+    """
+
+    client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+    response = client.images.generate(
+        model=model,
+        prompt=prompt,
+        size="1024x1024",
+        quality="standard",
+        n=1,
+    )
+
+    image_url = response.data[0].url
+    #print(image_url)
+    # Download and open the image using PIL
+    #image_response = requests.get(image_url)
+    #img = Image.open(BytesIO(image_response.content))
+
+    return image_url
 
 
 def parse_markdown_backticks(str) -> str:

@@ -1,15 +1,7 @@
-{"timestamp": "2024-11-02T12:35:41.280956", "function": "update_file_handler", "duration": "10.0836"}
-{"timestamp": "2024-11-02T12:36:16.336920", "function": "update_file_handler", "duration": "10.2685"}
-{"timestamp": "2024-11-02T14:18:32.283984", "function": "generate_image_handler", "duration": "0.0002"}
-{"timestamp": "2024-11-02T14:21:12.221427", "function": "generate_image_handler", "duration": "0.3314"}
-{"timestamp": "2024-11-02T14:29:30.795544", "function": "generate_image_handler", "duration": "0.7503"}
-{"timestamp": "2024-11-02T14:32:31.718292", "function": "generate_image_handler", "duration": "15.2083"}
-{"timestamp": "2024-11-02T14:38:46.883952", "function": "generate_image_handler", "duration": "11.4898"}
-{"timestamp": "2024-11-02T14:48:10.694673", "function": "generate_image_handler", "duration": "13.4689"}
-{"timestamp": "2024-11-02T14:50:24.249810", "function": "generate_image_handler", "duration": "10.6187"}
-{"timestamp": "2024-11-02T14:51:17.279167", "function": "generate_image_handler", "duration": "12.8133"}
-{"timestamp": "2024-11-02T14:58:33.906092", "function": "generate_image_handler", "duration": "13.6057"}
-{"timestamp": "2024-11-02T15:00:07.520845", "function": "generate_image_handler", "duration": "0.5446"}
-{"timestamp": "2024-11-02T15:01:29.951454", "function": "generate_image_handler", "duration": "0.5792"}
-{"timestamp": "2024-11-02T15:02:31.472313", "function": "generate_image_handler", "duration": "11.0151"}
-{"timestamp": "2024-11-02T15:02:56.037357", "function": "generate_image_handler", "duration": "11.5543"}
+{"timestamp": "2024-11-03T16:34:43.855067", "function": "generate_image_handler", "duration": "10.4685", "model": "image_model - dall-e-3"}
+{"timestamp": "2024-11-03T16:35:36.977331", "function": "delete_file_handler", "duration": "0.9849", "model": "base_model - gpt-4o-2024-08-06"}
+{"timestamp": "2024-11-03T16:37:19.850843", "function": "generate_image_handler", "duration": "10.9992", "model": "image_model - dall-e-3"}
+{"timestamp": "2024-11-03T16:37:39.709445", "function": "generate_image_handler", "duration": "10.1533", "model": "image_model - dall-e-3"}
+{"timestamp": "2024-11-03T16:38:26.852150", "function": "generate_image_handler", "duration": "9.9709", "model": "image_model - dall-e-3"}
+{"timestamp": "2024-11-03T16:38:55.935500", "function": "create_file_handler", "duration": "4.4996", "model": "fast_model - gpt-4o-mini"}
+{"timestamp": "2024-11-03T16:39:09.637749", "function": "delete_file_handler", "duration": "0.9984", "model": "base_model - gpt-4o-2024-08-06"}

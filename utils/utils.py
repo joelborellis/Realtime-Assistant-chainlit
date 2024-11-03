@@ -37,13 +37,13 @@ human_name = personalization.get("human_name", "User")
 voice = personalization.get("voice", "alloy")
 
 SESSION_INSTRUCTIONS = (
-    f"You are {ai_assistant_name}, a helpful assistant. Respond to {human_name}. "
+    f"System settings:\nTool use: enabled.\n\nInstructions:\n- You are {ai_assistant_name}, a helpful assistant. Respond to {human_name}.  You are responsible for helping test realtime voice capabilities\n- Please make sure to respond with a helpful voice via audio\n- Be kind, helpful, and curteous\n- It is okay to ask the user questions\n- Use tools and functions you have available liberally, it is part of the training apparatus\n- Be open to exploration and conversation\n- Remember: this is just for fun and testing!\n\nPersonality:\n- Be upbeat and genuine\n- Try speaking quickly as if excited\n\n"
     f"{personalization.get('system_message_suffix', '')}"
 )
 
 def timeit_decorator(func):
     @functools.wraps(func)
-    async def async_wrapper(*args, **kwargs):
+    async def async_wrapper(*args, model=None, **kwargs):
         start_time = time.perf_counter()
         result = await func(*args, **kwargs)
         end_time = time.perf_counter()
@@ -52,11 +52,16 @@ def timeit_decorator(func):
 
         jsonl_file = RUN_TIME_TABLE_LOG_JSON
 
+        if model is not None:
+            async_wrapper.model = model  # Dynamically set the model on each call
+        #print(f"Using model: {async_wrapper.model}")  # Access the model in the wrapperif model is not None:
+
         # Create new time record
         time_record = {
             "timestamp": datetime.now().isoformat(),
             "function": func.__name__,
             "duration": f"{duration:.4f}",
+            "model": f"{async_wrapper.model} - {model_name_to_id[async_wrapper.model]}",
         }
 
         # Append the new record to the JSONL file
@@ -67,7 +72,7 @@ def timeit_decorator(func):
         return result
 
     @functools.wraps(func)
-    def sync_wrapper(*args, **kwargs):
+    def sync_wrapper(*args, model=None, **kwargs):
         start_time = time.perf_counter()
         result = func(*args, **kwargs)
         end_time = time.perf_counter()
@@ -76,11 +81,16 @@ def timeit_decorator(func):
 
         jsonl_file = RUN_TIME_TABLE_LOG_JSON
 
+        if model is not None:
+            sync_wrapper.model = model  # Dynamically set the model on each call
+        #print(f"Using model: {async_wrapper.model}")  # Access the model in the wrapperif model is not None:
+
         # Create new time record
         time_record = {
             "timestamp": datetime.now().isoformat(),
             "function": func.__name__,
             "duration": f"{duration:.4f}",
+            "model": f"{sync_wrapper.model} - {model_name_to_id[sync_wrapper.model]}",
         }
 
         # Append the new record to the JSONL file

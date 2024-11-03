@@ -10,13 +10,7 @@ from utils.llm import (
     image_prompt,
 )
 from utils.utils import ModelName, model_name_to_id, timeit_decorator
-import logging
-
-# Setup logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
-logger = logging.getLogger(__name__)
+from chainlit.logger import logger
 
 
 class CreateFileResponse(BaseModel):
@@ -32,11 +26,6 @@ class FileSelectionResponse(BaseModel):
 class FileDeleteResponse(BaseModel):
     file: str
     force_delete: bool
-
-
-class GenerateImageResponse(BaseModel):
-    image_url: str
-    model: ModelName = ModelName.image_model
 
 
 query_stock_price_def = {
@@ -123,6 +112,17 @@ create_file_def = {
                 "type": "string",
                 "description": "The user's prompt to generate the file content.",
             },
+            "model": {
+                "type": "string",
+                "enum": [
+                    "state_of_the_art_model",
+                    "reasoning_model",
+                    "base_model",
+                    "fast_model",
+                    "image_model",
+                ],
+                "description": "The model to use for updating the file content. Defaults to 'base_model' if not explicitly specified.",
+            },
         },
         "required": ["file_name", "prompt"],
     },
@@ -130,7 +130,9 @@ create_file_def = {
 
 
 @timeit_decorator
-async def create_file_handler(file_name: str, prompt: str) -> dict:
+async def create_file_handler(
+    file_name: str, prompt: str, model: ModelName = ModelName.base_model
+) -> dict:
     """
     Generate content for a new file based on the user's prompt and the file name.
     """
@@ -176,7 +178,9 @@ async def create_file_handler(file_name: str, prompt: str) -> dict:
     """
 
     # Call the LLM to generate the file content
-    response = structured_output_prompt(prompt_structure, CreateFileResponse)
+    response = structured_output_prompt(
+        prompt_structure, CreateFileResponse, model_name_to_id[model]
+    )
 
     # Write the generated content to the file
     with open(file_path, "w") as f:
@@ -214,6 +218,7 @@ update_file_def = {
                     "reasoning_model",
                     "base_model",
                     "fast_model",
+                    "image_model",
                 ],
                 "description": "The model to use for updating the file content. Defaults to 'base_model' if not explicitly specified.",
             },
@@ -260,13 +265,12 @@ async def update_file_handler(
 </user-prompt>
 """
 
-    logger.info(f"🍓 Using the Model: {model_name_to_id[ModelName.fast_model]}")
-
+    # logger.info(f"🍓 Using the Model: {model_name_to_id[model]}")
     # Call the LLM to select the file
     file_selection_response = structured_output_prompt(
         select_file_prompt,
         FileSelectionResponse,
-        llm_model=model_name_to_id[ModelName.fast_model],
+        model=model_name_to_id[model],
     )
 
     # Check if a file was selected
@@ -347,6 +351,17 @@ delete_file_def = {
                 "type": "boolean",
                 "description": "Whether to force delete the file without confirmation. Default to 'false' if not specified.",
             },
+            "model": {
+                "type": "string",
+                "enum": [
+                    "state_of_the_art_model",
+                    "reasoning_model",
+                    "base_model",
+                    "fast_model",
+                    "image_model",
+                ],
+                "description": "The model to use for deleting the file content. Defaults to 'base_model' if not explicitly specified.",
+            },
         },
         "required": ["prompt"],
     },
@@ -354,7 +369,9 @@ delete_file_def = {
 
 
 @timeit_decorator
-async def delete_file_handler(prompt: str, force_delete: bool = False) -> dict:
+async def delete_file_handler(
+    prompt: str, force_delete: bool = False, model: ModelName = ModelName.base_model
+) -> dict:
     """
     Delete a file based on the user's prompt.
     """
@@ -389,7 +406,7 @@ async def delete_file_handler(prompt: str, force_delete: bool = False) -> dict:
 
     # Call the LLM to select the file and determine 'force_delete'
     file_delete_response = structured_output_prompt(
-        select_file_prompt, FileDeleteResponse
+        select_file_prompt, FileDeleteResponse, model_name_to_id[model]
     )
 
     # Check if a file was selected
@@ -398,7 +415,7 @@ async def delete_file_handler(prompt: str, force_delete: bool = False) -> dict:
     else:
         selected_file = file_delete_response.file
         file_path = os.path.join(scratch_pad_dir, selected_file)
-
+        print(force_delete)
         # Check if the file exists
         if not os.path.exists(file_path):
             result = {"status": "File does not exist", "file_name": selected_file}
@@ -437,8 +454,9 @@ generate_image_def = {
                     "reasoning_model",
                     "base_model",
                     "fast_model",
+                    "image_model",
                 ],
-                "description": "The model to use for updating the file content. Defaults to 'base_model' if not explicitly specified.",
+                "description": "The model to use for creating the image. Defaults to 'image_model' if not explicitly specified.",
             },
         },
         "required": ["prompt"],
@@ -466,15 +484,16 @@ async def generate_image_handler(
     """
 
     try:
+        # logger.info(f"🍓 Using the Model: {model_name_to_id[model]}")
         # Call the LLM to generate the updates using the specified model
         image_url = image_prompt(generate_image_prompt, model_name_to_id[model])
 
         # Check if a file was selected
         if not image_url:
-           return {"status": "No image was generated"}
+            return {"status": "No image was generated"}
         else:
             # Download and open the image using PIL
-            #image_response = requests.get(image_url)
+            # image_response = requests.get(image_url)
             image = cl.Image(url=image_url, name="image1", display="inline")
             # Attach the image to the message
             await cl.Message(

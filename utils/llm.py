@@ -3,8 +3,7 @@ import os
 from pydantic import BaseModel
 
 def structured_output_prompt(
-    prompt: str, response_format: BaseModel, llm_model: str = "gpt-4o-2024-08-06"
-) -> BaseModel:
+    prompt: str, response_format: BaseModel, model: str) -> BaseModel:
     """
     Parse the response from the OpenAI API using structured output.
 
@@ -18,7 +17,7 @@ def structured_output_prompt(
     client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
     completion = client.beta.chat.completions.parse(
-        model=llm_model,
+        model=model,
         messages=[
             {"role": "user", "content": prompt},
         ],
@@ -80,11 +79,6 @@ def image_prompt(prompt: str, model: str) -> str:
     )
 
     image_url = response.data[0].url
-    #print(image_url)
-    # Download and open the image using PIL
-    #image_response = requests.get(image_url)
-    #img = Image.open(BytesIO(image_response.content))
-
     return image_url
 
 

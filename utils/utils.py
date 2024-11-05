@@ -43,25 +43,29 @@ SESSION_INSTRUCTIONS = (
 
 def timeit_decorator(func):
     @functools.wraps(func)
-    async def async_wrapper(*args, model=None, **kwargs):
+    async def async_wrapper(*args, **kwargs):
         start_time = time.perf_counter()
+        
+        # Retrieve model from kwargs if present; default to None if not
+        model = kwargs.get("model", None)
+        async_wrapper.model = model  # Assign model to wrapper attribute, defaulting to None if not provided
+            
         result = await func(*args, **kwargs)
         end_time = time.perf_counter()
         duration = round(end_time - start_time, 4)
         print(f"⏰ {func.__name__}() took {duration:.4f} seconds")
+        
+        # Prepare to log the model usage
+        model_name = model_name_to_id.get(async_wrapper.model, "unknown")
 
         jsonl_file = RUN_TIME_TABLE_LOG_JSON
-
-        if model is not None:
-            async_wrapper.model = model  # Dynamically set the model on each call
-        #print(f"Using model: {async_wrapper.model}")  # Access the model in the wrapperif model is not None:
 
         # Create new time record
         time_record = {
             "timestamp": datetime.now().isoformat(),
             "function": func.__name__,
             "duration": f"{duration:.4f}",
-            "model": f"{async_wrapper.model} - {model_name_to_id[async_wrapper.model]}",
+            "model": f"{async_wrapper.model} - {model_name}",
         }
 
         # Append the new record to the JSONL file
@@ -72,25 +76,29 @@ def timeit_decorator(func):
         return result
 
     @functools.wraps(func)
-    def sync_wrapper(*args, model=None, **kwargs):
+    def sync_wrapper(*args, **kwargs):
         start_time = time.perf_counter()
+        
+        # Retrieve model from kwargs if present; default to None if not
+        model = kwargs.get("model", None)
+        async_wrapper.model = model  # Assign model to wrapper attribute, defaulting to None if not provided
+            
         result = func(*args, **kwargs)
         end_time = time.perf_counter()
         duration = round(end_time - start_time, 4)
         print(f"⏰ {func.__name__}() took {duration:.4f} seconds")
+        
+        # Prepare to log the model usage
+        model_name = model_name_to_id.get(async_wrapper.model, "unknown")
 
         jsonl_file = RUN_TIME_TABLE_LOG_JSON
-
-        if model is not None:
-            sync_wrapper.model = model  # Dynamically set the model on each call
-        #print(f"Using model: {async_wrapper.model}")  # Access the model in the wrapperif model is not None:
 
         # Create new time record
         time_record = {
             "timestamp": datetime.now().isoformat(),
             "function": func.__name__,
             "duration": f"{duration:.4f}",
-            "model": f"{sync_wrapper.model} - {model_name_to_id[sync_wrapper.model]}",
+            "model": f"{sync_wrapper.model} - {model_name}",
         }
 
         # Append the new record to the JSONL file

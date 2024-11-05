@@ -8,6 +8,7 @@ from utils.llm import (
     structured_output_prompt,
     chat_prompt,
     image_prompt,
+    model_predictive_prompt
 )
 from utils.utils import ModelName, model_name_to_id, timeit_decorator
 from chainlit.logger import logger
@@ -177,10 +178,13 @@ async def create_file_handler(
 {memory_content}
     """
 
+    #model_selected = model_predictive_prompt(prompt)
     # Call the LLM to generate the file content
-    response = structured_output_prompt(
+    response, model_used = structured_output_prompt(
         prompt_structure, CreateFileResponse, model_name_to_id[model]
     )
+    
+    logger.info(f"🍓 Create File Used the Model: {model_used}")
 
     # Write the generated content to the file
     with open(file_path, "w") as f:
@@ -265,13 +269,14 @@ async def update_file_handler(
 </user-prompt>
 """
 
-    # logger.info(f"🍓 Using the Model: {model_name_to_id[model]}")
     # Call the LLM to select the file
-    file_selection_response = structured_output_prompt(
+    file_selection_response, model_used_structured = structured_output_prompt(
         select_file_prompt,
         FileSelectionResponse,
         model=model_name_to_id[model],
     )
+    
+    logger.info(f"🍓 Update File Used the Model: {model_used_structured}")
 
     # Check if a file was selected
     if not file_selection_response.file:
@@ -321,7 +326,10 @@ async def update_file_handler(
 """
 
     # Call the LLM to generate the updates using the specified model
-    file_update_response = chat_prompt(update_file_prompt, model_name_to_id[model])
+    #model_selected = model_predictive_prompt(prompt)
+    file_update_response, model_used_chat = chat_prompt(update_file_prompt, model_name_to_id[model])
+    
+    logger.info(f"🍓 Update File Used the Model: {model_used_chat}")
 
     # Apply the updates by writing the new content to the file
     with open(file_path, "w") as f:
@@ -330,7 +338,7 @@ async def update_file_handler(
     return {
         "status": "File updated",
         "file_name": selected_file,
-        "model_used": model,
+        "model_used": model_used_chat,
     }
 
 
@@ -405,10 +413,12 @@ async def delete_file_handler(
     """
 
     # Call the LLM to select the file and determine 'force_delete'
-    file_delete_response = structured_output_prompt(
+    file_delete_response, model_used = structured_output_prompt(
         select_file_prompt, FileDeleteResponse, model_name_to_id[model]
     )
-
+    
+    logger.info(f"🍓 Delete File Used the Model: {model_used}")
+    
     # Check if a file was selected
     if not file_delete_response.file:
         result = {"status": "No matching file found"}
@@ -456,10 +466,10 @@ generate_image_def = {
                     "fast_model",
                     "image_model",
                 ],
-                "description": "The model to use for creating the image. Defaults to 'image_model' if not explicitly specified.",
+                "description": "The model to use for creating an image. Defaults to 'image_model' if not explicitly specified by the user.",
             },
         },
-        "required": ["prompt"],
+        "required": ["prompt", "model"],
     },
 }
 
@@ -482,27 +492,28 @@ async def generate_image_handler(
         {prompt}
     </user-prompt>
     """
+    
+    
+    # Call the LLM to generate the updates using the specified model
+    image_url = image_prompt(generate_image_prompt, model_name_to_id[model])
+    
+    logger.info(f"🍓 Create Image Used the Model: {model_name_to_id[model]}")
 
-    try:
-        # logger.info(f"🍓 Using the Model: {model_name_to_id[model]}")
-        # Call the LLM to generate the updates using the specified model
-        image_url = image_prompt(generate_image_prompt, model_name_to_id[model])
-
-        # Check if a file was selected
-        if not image_url:
-            return {"status": "No image was generated"}
-        else:
-            # Download and open the image using PIL
-            # image_response = requests.get(image_url)
-            image = cl.Image(url=image_url, name="image1", display="inline")
-            # Attach the image to the message
-            await cl.Message(
-                content="This message has an image!",
-                elements=[image],
-            ).send()
-
-    except Exception as e:
-        print("An error occurred:", e)
+    # Check if a file was selected
+    if not image_url:
+        result = {"status": "No image was generated"}
+    else:
+        # Download and open the image using PIL
+        # image_response = requests.get(image_url)
+        image = cl.Image(url=image_url, name="image1", display="inline")
+        # Attach the image to the message
+        await cl.Message(
+            content="This message has an image!",
+            elements=[image],
+        ).send()
+        result = {"status": "Image created"}
+    
+    return result
 
 
 generate_image = (generate_image_def, generate_image_handler)

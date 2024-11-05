@@ -24,12 +24,14 @@ def structured_output_prompt(
         response_format=response_format,
     )
 
+    model_used = completion.model
+    #print(f"used model: {model}")
     message = completion.choices[0].message
 
     if not message.parsed:
         raise ValueError(message.refusal)
 
-    return message.parsed
+    return message.parsed, model_used
 
 
 def chat_prompt(prompt: str, model: str) -> str:
@@ -52,9 +54,70 @@ def chat_prompt(prompt: str, model: str) -> str:
         ],
     )
 
+    model_used = completion.model
     message = completion.choices[0].message
 
-    return message.content
+    return message.content, model_used
+
+def model_predictive_prompt(prompt: str) -> str:
+    
+    client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    
+    print(prompt)
+    
+    model_choices = """
+        /// <summary>
+        /// Represents a mapping of a common name that a user might call model to the actual model name.  For example ModelName.base_model would return 'gpt-4o-2024-08-06'"
+        /// </summary>
+            /// <summary>
+            /// Represents the state of the art model.
+            /// </summary>
+            ModelName.state_of_the_art_model: 'o1-preview',
+            /// <summary>
+            /// Represents the reasoning model.
+            /// </summary>
+            ModelName.reasoning_model: 'o1-mini',
+            /// <summary>
+            /// Represents the Claude sonnet model.
+            /// </summary>
+            ModelName.sonnet_model: 'claude-3-5-sonnet-20240620',
+            /// <summary>
+            /// Represents the base model.
+            /// </summary>
+            ModelName.base_model: 'gpt-4o-2024-08-06',
+            /// <summary>
+            /// Represents the fast model.
+            /// </summary>
+            ModelName.fast_model: 'gpt-4o-mini',
+            /// <summary>
+            /// Represents the image model.
+            /// </summary>
+            ModelName.image_model: 'dall-e-3',
+        """
+
+    #prompt = "create a file called myfile.csv and populate it with 20 rows of random information about animals and use the base model"
+
+    completion = client.chat.completions.create(
+        model="gpt-4o-2024-08-06",
+        messages=[
+            {
+                "role": "user",
+                "content": f"Choose the right model name based on the the following directive from the user {prompt}.  Respond only with the model name, and with no markdown formatting."
+            },
+            {
+                "role": "user",
+                "content": model_choices
+            }
+        ],
+        prediction={
+            "type": "content",
+            "content": model_choices
+        }
+    )
+
+    model_selected = completion.choices[0].message.content
+    print(model_selected)
+    return model_selected
 
 def image_prompt(prompt: str, model: str) -> str:
     """
@@ -79,6 +142,7 @@ def image_prompt(prompt: str, model: str) -> str:
     )
 
     image_url = response.data[0].url
+    
     return image_url
 
 

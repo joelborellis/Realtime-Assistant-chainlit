@@ -44,7 +44,6 @@ async def setup_openai_realtime():
     async def handle_error(event):
         logger.error(event)
         
-    
     openai_realtime.on('conversation.updated', handle_conversation_updated)
     openai_realtime.on('conversation.item.completed', handle_item_completed)
     openai_realtime.on('conversation.interrupted', handle_conversation_interrupt)
@@ -54,7 +53,6 @@ async def setup_openai_realtime():
     await asyncio.gather(*coros)
 
     cl.user_session.set("openai_realtime", openai_realtime)
-
 
 @cl.on_chat_start
 async def start():

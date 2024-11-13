@@ -74,7 +74,7 @@ async def on_message(message: cl.Message):
 async def on_audio_start():
     try:
         openai_realtime: RealtimeClient = cl.user_session.get("openai_realtime")
-        print(SESSION_INSTRUCTIONS)
+        #print(SESSION_INSTRUCTIONS)
         await openai_realtime.update_session(instructions=SESSION_INSTRUCTIONS, voice=voice)  # this will update the session instructions and voice
         await openai_realtime.connect()
         logger.info(f"Connected to OpenAI realtime track_id: {cl.user_session.get("track_id")}")

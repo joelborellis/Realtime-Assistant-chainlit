@@ -357,7 +357,7 @@ delete_file_def = {
             },
             "force_delete": {
                 "type": "boolean",
-                "description": "Whether to force delete the file without confirmation. Default to 'false' if not specified.",
+                "description": "Whether to force delete the file without confirmation. Infer whether to force delete based on the users prompt.  Defaults to 'false' if 'force delete' is not explicitly specified.",
             },
             "model": {
                 "type": "string",
@@ -371,7 +371,7 @@ delete_file_def = {
                 "description": "The model to use for deleting the file content. Defaults to 'base_model' if not explicitly specified.",
             },
         },
-        "required": ["prompt"],
+        "required": ["prompt", "force_delete"],
     },
 }
 
@@ -401,6 +401,7 @@ async def delete_file_handler(
     <instructions>
         <instruction>Based on the user's prompt and the list of available files, infer which file the user wants to delete.</instruction>
         <instruction>If no file matches, return an empty string for 'file'.</instruction>
+        <instruction>If user prompt does not contain 'force delete' return False.</instruction>
     </instructions>
 
     <available-files>
@@ -418,6 +419,8 @@ async def delete_file_handler(
     )
     
     logger.info(f"🍓 Delete File Used the Model: {model_used}")
+    print(file_delete_response.force_delete)
+    print(f"{force_delete}: {prompt}")
     
     # Check if a file was selected
     if not file_delete_response.file:
@@ -425,12 +428,12 @@ async def delete_file_handler(
     else:
         selected_file = file_delete_response.file
         file_path = os.path.join(scratch_pad_dir, selected_file)
-        print(force_delete)
         # Check if the file exists
         if not os.path.exists(file_path):
             result = {"status": "File does not exist", "file_name": selected_file}
+            
         # If 'force_delete' is False, prompt for confirmation
-        elif not force_delete:
+        elif not file_delete_response.force_delete:
             result = {
                 "status": "Confirmation required",
                 "file_name": selected_file,
@@ -439,7 +442,7 @@ async def delete_file_handler(
         else:
             # Proceed to delete the file
             os.remove(file_path)
-            result = {"status": "File deleted", "file_name": selected_file}
+            result = {"status": f"The file {selected_file} has been deleted", "file_name": selected_file}
 
     return result
 

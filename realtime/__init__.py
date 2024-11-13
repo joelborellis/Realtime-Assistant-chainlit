@@ -119,8 +119,8 @@ class RealtimeAPI(RealtimeEventHandler):
                 raise ValueError("Azure OpenAI URL is required")
 
             url = f"{self.url}/openai/realtime?api-version={self.api_version}&deployment={self.deployment}"
-            print(url)
-            print(self.api_key)
+            #print(url)
+            #print(self.api_key)
             # logger.info(f"Connecting to Azure URL: {url}")
             self.ws = await websockets.connect(
                 url,

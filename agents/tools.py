@@ -1,6 +1,4 @@
-import yfinance as yf
 import chainlit as cl
-import plotly
 import os
 from pydantic import BaseModel
 from utils.llm import (
@@ -8,10 +6,11 @@ from utils.llm import (
     structured_output_prompt,
     chat_prompt,
     image_prompt,
-    model_predictive_prompt
 )
 from utils.utils import ModelName, model_name_to_id, timeit_decorator
 from chainlit.logger import logger
+from datetime import datetime
+import random
 
 
 class CreateFileResponse(BaseModel):
@@ -27,7 +26,40 @@ class FileSelectionResponse(BaseModel):
 class FileDeleteResponse(BaseModel):
     file: str
     force_delete: bool
+ 
+get_current_time_def = {
+        "type": "function",
+        "name": "get_current_time",
+        "description": "Returns the current time.",
+        "parameters": {
+            "type": "object",
+            "properties": {},
+            "required": [],
+        },
+    }
+   
+@timeit_decorator
+async def get_current_time_handler():
+    return {"current_time": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
 
+get_current_time = (get_current_time_def, get_current_time_handler)
+
+get_random_num_def = {
+        "type": "function",
+        "name": "get_random_number",
+        "description": "Returns a random number between 1 and 100.",
+        "parameters": {
+            "type": "object",
+            "properties": {},
+            "required": [],
+        },
+    }
+
+@timeit_decorator
+async def get_random_num_handler():
+    return {"random_number": random.randint(1, 100)}
+
+get_random_number = (get_random_num_def, get_random_num_handler)
 
 create_file_def = {
     "type": "function",
@@ -457,4 +489,6 @@ tools = [
     update_file,
     delete_file,
     generate_image,
+    get_current_time,
+    get_random_number,
 ]

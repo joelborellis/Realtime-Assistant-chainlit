@@ -57,7 +57,7 @@ async def setup_openai_realtime():
 @cl.on_chat_start
 async def start():
     await cl.Message(
-        content="Welcome to the Chainlit x OpenAI realtime example. Press `P` to talk!"
+        content="Welcome to a fun POC using Realtime API. Press `P` to talk!"
     ).send()
     await setup_openai_realtime()
 

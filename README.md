@@ -3,7 +3,7 @@ Tags: [multimodal, audio]
 
 # POC Realtime API assistant
 
-This repo is isspired by two repos.  Firts the amazing work by IndyDevDan (https://github.com/disler). He inspired the idea of creating an assistant that is able to perform tasks on the users behalf using the Realtime API.  This project was also inspred by Jesus Copado who expanded on IndyDevDans work and added a visual component in order to be able to see output from certain tasks.
+This repo is inspired by two repos.  First the amazing work by IndyDevDan (https://github.com/disler). He inspired the idea of creating an assistant that is able to perform tasks on the users behalf using the Realtime API.  This project was also inspred by Jesus Copado (https://github.com/jesuscopado) who expanded on IndyDevDans work and added a visual component in order to be able to see output from certain tasks.
 
 ## Key Features
 
@@ -25,3 +25,14 @@ The Assistant has a tools that are implemented as functions and they can perform
 
 - **Predictive Prompts**:  This is a way to use a quick call to the LLM to return a predictive value.  In this project there is  concept of which model to use to perform a task.  For example use the "fast model" or the "state of the art model".  The idea is the user can tell Ada which model to use for a certain task and she will use the model corresponding to users request.
 
+- **Basic Configurations**:  Thru a json file you can customize things like the name of the assistant and what you want it to call you.
+
+- **Basic Logging**:  There is a decorator function that does basic logging to keep track of the time it took for the tool/agent to execute eack tool/agent.  This could be greatly improved to also maybe capture costs related to function calls etc.
+
+## Setup
+
+Install uv (https://docs.astral.sh/uv/), the hyper modern Python package manager.
+Setup environment cp .env.sample .env add your OPENAI_API_KEY.
+Update personalization.json to fit your setup
+Install dependencies uv sync
+Run the realtime assistant using chainlit by running chainlit run app.py

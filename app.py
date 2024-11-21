@@ -26,6 +26,11 @@ async def setup_openai_realtime():
                 await cl.context.emitter.send_audio_chunk(cl.OutputAudioChunk(mimeType="pcm16", data=audio, track=cl.user_session.get("track_id")))
             if 'transcript' in delta:
                 transcript = delta['transcript']  # string, transcript added
+                if item['role'] == 'user': # Remove newline and carriage return characters 
+                    transcript = transcript.replace('\n', ' ').replace('\r', ' ').strip() # Optionally, collapse multiple spaces into a single space 
+                    transcript = ' '.join(transcript.split()) 
+                    print(transcript) 
+                    cl.user_session.set("current_transcript", transcript)
                 pass
             if 'arguments' in delta:
                 arguments = delta['arguments']  # string, function arguments added

@@ -31,8 +31,8 @@ The Assistant has a tools that are implemented as functions and they can perform
 
 ## Setup
 
-Install uv (https://docs.astral.sh/uv/), the hyper modern Python package manager.
-Setup environment cp .env.sample .env add your OPENAI_API_KEY.
-Update personalization.json to fit your setup
-Install dependencies uv sync
-Run the realtime assistant using chainlit by running chainlit run app.py
+- **Install uv**:  Install uv (https://docs.astral.sh/uv/), the hyper modern Python package manager.
+- **Setup your environment**:  Setup environment cp .env.sample .env add your OPENAI_API_KEY.
+- **Update your personalization**:  Update personalization.json to fit your setup
+- **Install dependencies**:  Install dependencies uv sync
+- **Run the Assistant**:  Run the realtime assistant using chainlit by running chainlit run app.py

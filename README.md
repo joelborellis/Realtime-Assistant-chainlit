@@ -31,7 +31,7 @@ The Assistant has a tools that are implemented as functions and they can perform
 
 ## Setup
 
-- **Install uv**:  Install uv (https://docs.astral.sh/uv/), the hyper modern Python package manager.
+- **Install uv**:  Install uv (https://docs.astral.sh/uv/), the hyper modern Python package manager.  Or, pip install uv (allow uv to create an environment)
 - **Setup your environment**:  Setup environment cp .env.sample .env add your OPENAI_API_KEY.
 - **Update your personalization**:  Update personalization.json to fit your setup
 - **Install dependencies**:  Install dependencies uv sync

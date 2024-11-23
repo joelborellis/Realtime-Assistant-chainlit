@@ -27,6 +27,7 @@ def structured_output_prompt(
     model_used = completion.model
     #print(f"used model: {model}")
     message = completion.choices[0].message
+    print(message.parsed)
 
     if not message.parsed:
         raise ValueError(message.refusal)

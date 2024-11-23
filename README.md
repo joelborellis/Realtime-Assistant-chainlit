@@ -20,6 +20,8 @@ The Assistant has a tools that are implemented as functions and they can perform
 - **update_file**:  This tool/agent updates the content of a file.  For example say 'Hey Ada, add twenty rows of random data to myfile.csv about animals".  You can also perform tasks like deleting certain information from the file.  Say "Hey Ada, remove the row about alligators from myfile.csv"
 - **delete_file**: Delete a file.  This tool/agent not just delees a file but showcases how you can send back a clarification to the user confirming the operation.  So for example say "Hey Ada, delete the file myfile.csv".  Ada might ask you to confirm the delete by using the phrase "force delete".  
 - **generate_image**:  Generate and image.  This tool/agent creates images using a very simple system prompt using an image model (currently Dall-e-3)
+- **get_current_time**:  Simple function just to test that function calls are working.  Repeats the current date and time.
+- **generate_raandom_number**:  Simple function to test that funtions calls are working.  Generates a random number.
 
 ## Other concepts this project will hightlight
 

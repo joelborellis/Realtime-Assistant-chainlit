@@ -6,3 +6,5 @@ __pycache__
 ./utils/__pycache__
 ./realtime/__pycache__
 chainlit.md
+scratchpad
+uv.lock

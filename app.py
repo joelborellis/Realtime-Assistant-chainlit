@@ -1,19 +1,35 @@
 import asyncio
 from openai import AsyncOpenAI
+import json
 
 import chainlit as cl
 from uuid import uuid4
 from chainlit.logger import logger
 
 from realtime import RealtimeClient
-from agents.tools import tools
 from utils.utils import SESSION_INSTRUCTIONS, voice
+from tools.general_tools import GetCurrentTimeTool
+from tools.general_tools import GetRandomNumberTool
+from tools.file_tools import CreateFileTool
+from tools.file_tools import DeleteFileTool
+from tools.file_tools import UpdateFileTool
+from tools.image_tools import GenerateImageTool
 
-client = AsyncOpenAI()    
+client = AsyncOpenAI()  
+
+tools = [
+    CreateFileTool().get_tool(),  # returns the def and handle
+    UpdateFileTool().get_tool(),  # returns the def and handle
+    DeleteFileTool().get_tool(), # returns the def and handle
+    GenerateImageTool().get_tool(), # returns the def and handle
+    GetCurrentTimeTool().get_tool(), # returns the def and handle
+    GetRandomNumberTool().get_tool(), # returns the def and handle
+]  
 
 async def setup_openai_realtime():
     """Instantiate and configure the OpenAI Realtime Client"""
     openai_realtime = RealtimeClient()
+    await openai_realtime.update_session(instructions=SESSION_INSTRUCTIONS, voice=voice) # set the instructions
     cl.user_session.set("track_id", str(uuid4()))
     async def handle_conversation_updated(event):
         item = event.get("item")
@@ -29,17 +45,29 @@ async def setup_openai_realtime():
                 if item['role'] == 'user': # Remove newline and carriage return characters 
                     transcript = transcript.replace('\n', ' ').replace('\r', ' ').strip() # Optionally, collapse multiple spaces into a single space 
                     transcript = ' '.join(transcript.split()) 
-                    print(transcript) 
+                    #print(transcript) 
                     cl.user_session.set("current_transcript", transcript)
                 pass
             if 'arguments' in delta:
                 arguments = delta['arguments']  # string, function arguments added
                 pass
             
-    async def handle_item_completed(item):
-        """Used to populate the chat context with transcription once an item is completed."""
-        # print(item) # TODO
-        pass
+    async def handle_item_completed(event):
+        """Used to populate the chat context with transcription once an item is completed."""        
+        #print(event.get("type"))
+        # Check if the role is "user"
+        #if event.get("item", {}).get("role") == "user":
+        #    # Extract the text
+        #    content = event.get("item", {}).get("content", [])
+        #    if content:  # Ensure the content list is not empty
+        #        print(content)
+        #        text = content[0].get("text")
+        #        print(f"Extracted text: {text}")
+        #    else:
+        #        print("No content found.")
+        #else:
+        #   print("Role is not 'user'.")
+        #pass
     
     async def handle_conversation_interrupt(event):
         """Used to cancel the client previous audio playback."""
@@ -80,7 +108,7 @@ async def on_audio_start():
     try:
         openai_realtime: RealtimeClient = cl.user_session.get("openai_realtime")
         #print(SESSION_INSTRUCTIONS)
-        await openai_realtime.update_session(instructions=SESSION_INSTRUCTIONS, voice=voice)  # this will update the session instructions and voice
+        #await openai_realtime.update_session(instructions=SESSION_INSTRUCTIONS, voice=voice)  # this will update the session instructions and voice
         await openai_realtime.connect()
         logger.info(f"Connected to OpenAI realtime track_id: {cl.user_session.get("track_id")}")
         # TODO: might want to recreate items to restore context

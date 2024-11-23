@@ -23,7 +23,7 @@ model_name_to_id = {
     ModelName.reasoning_model: "o1-mini",
     ModelName.sonnet_model: "claude-3-5-sonnet-20240620",
     ModelName.base_model: "gpt-4o-2024-08-06",
-    ModelName.fast_model: "gpt-4o-mini",
+    ModelName.fast_model: "gpt-4o-mini-2024-07-18",
     ModelName.image_model: "dall-e-3",
 }
 
@@ -47,13 +47,22 @@ def timeit_decorator(func):
         start_time = time.perf_counter()
         
         # Retrieve model from kwargs if present; default to None if not
+        #print(args)
+        print(kwargs)
         model = kwargs.get("model", None)
+        prompt = kwargs.get("prompt", None)
         async_wrapper.model = model  # Assign model to wrapper attribute, defaulting to None if not provided
             
         result = await func(*args, **kwargs)
         end_time = time.perf_counter()
         duration = round(end_time - start_time, 4)
-        print(f"⏰ {func.__name__}() took {duration:.4f} seconds")
+
+        # `args[0]` refers to the instance (`self`) of the tool class
+        instance = args[0] if len(args) > 0 else None
+        #description = getattr(instance, "description", func.__name__)
+        name = getattr(instance, "name", func.__name__)
+        
+        print(f"⏰ {name}() took {duration:.4f} seconds")
         
         # Prepare to log the model usage
         model_name = model_name_to_id.get(async_wrapper.model, "unknown")
@@ -63,7 +72,8 @@ def timeit_decorator(func):
         # Create new time record
         time_record = {
             "timestamp": datetime.now().isoformat(),
-            "function": func.__name__,
+            "function": name,
+            "prompt": prompt,
             "duration": f"{duration:.4f}",
             "model": f"{async_wrapper.model} - {model_name}",
         }

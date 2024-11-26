@@ -5,8 +5,16 @@ import functools
 import asyncio
 import time
 from datetime import datetime
+from dotenv import load_dotenv
+
+load_dotenv()
 
 RUN_TIME_TABLE_LOG_JSON = "runtime_time_table.jsonl"
+# Load personalization settings
+personalization_file = os.getenv("PERSONALIZATION_FILE", "./personalization.json")
+with open(personalization_file, "r") as f:
+    personalization = json.load(f)
+BING_SEARCH_KEY = os.getenv("BING_SEARCH_KEY", "")
 
 class ModelName(str, Enum):
     state_of_the_art_model = "state_of_the_art_model"
@@ -45,7 +53,6 @@ def timeit_decorator(func):
     @functools.wraps(func)
     async def async_wrapper(*args, **kwargs):
         start_time = time.perf_counter()
-        
         # Retrieve model from kwargs if present; default to None if not
         #print(args)
         print(kwargs)

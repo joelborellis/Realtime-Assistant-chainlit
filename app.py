@@ -10,6 +10,7 @@ from realtime import RealtimeClient
 from utils.utils import SESSION_INSTRUCTIONS, voice
 from tools.general_tools import GetCurrentTimeTool
 from tools.general_tools import GetRandomNumberTool
+from tools.general_tools import BingSearchTool
 from tools.file_tools import CreateFileTool
 from tools.file_tools import DeleteFileTool
 from tools.file_tools import UpdateFileTool
@@ -24,6 +25,7 @@ tools = [
     GenerateImageTool().get_tool(), # returns the def and handle
     GetCurrentTimeTool().get_tool(), # returns the def and handle
     GetRandomNumberTool().get_tool(), # returns the def and handle
+    BingSearchTool().get_tool(), # returns the def and handle
 ]  
 
 async def setup_openai_realtime():
@@ -41,12 +43,10 @@ async def setup_openai_realtime():
                 audio = delta['audio']  # Int16Array, audio added
                 await cl.context.emitter.send_audio_chunk(cl.OutputAudioChunk(mimeType="pcm16", data=audio, track=cl.user_session.get("track_id")))
             if 'transcript' in delta:
-                transcript = delta['transcript']  # string, transcript added
-                if item['role'] == 'user': # Remove newline and carriage return characters 
-                    transcript = transcript.replace('\n', ' ').replace('\r', ' ').strip() # Optionally, collapse multiple spaces into a single space 
-                    transcript = ' '.join(transcript.split()) 
-                    #print(transcript) 
-                    cl.user_session.set("current_transcript", transcript)
+                transcript = ' '.join(delta['transcript'].split())
+                cl.user_session.set(f"current_{item['role']}_transcript", transcript) # set the session with user AND assistant transcript
+                print(f"User: {cl.user_session.get("current_user_transcript")}")
+                print(f"Assistant: {cl.user_session.get("current_assistant_transcript")}")
                 pass
             if 'arguments' in delta:
                 arguments = delta['arguments']  # string, function arguments added

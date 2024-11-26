@@ -1,10 +1,9 @@
 .venv
 .env
 __pycache__
-.chainlit
-./agents/__pycache__
 ./utils/__pycache__
 ./realtime/__pycache__
+./tools/__pycache__
 chainlit.md
 scratchpad
 uv.lock

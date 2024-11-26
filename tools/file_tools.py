@@ -4,7 +4,12 @@ from .base_tool import BaseTool
 from utils.utils import ModelName, model_name_to_id, timeit_decorator
 from pydantic import BaseModel
 from chainlit.logger import logger
+from jinja2 import Environment, FileSystemLoader
+import chainlit as cl
 
+# Load Jinja2 environment
+PROMPT_DIR = "prompts"  # Directory where your XML templates are stored
+env = Environment(loader=FileSystemLoader(PROMPT_DIR), autoescape=True)
 
 class CreateFileResponse(BaseModel):
     file_content: str
@@ -43,7 +48,7 @@ class CreateFileTool(BaseTool):
     @timeit_decorator
     async def handle(
         self, file_name: str, prompt: str, model: ModelName = ModelName.base_model
-    ):
+    ) -> dict:
         scratch_pad_dir = os.getenv("SCRATCH_PAD_DIR", "./scratchpad")
         os.makedirs(scratch_pad_dir, exist_ok=True)
         file_path = os.path.join(scratch_pad_dir, file_name)
@@ -54,37 +59,30 @@ class CreateFileTool(BaseTool):
         # Get all memory content
         # memory_content = memory_manager.get_xml_for_prompt(["*"])  # need to implement this
         memory_content = "No real content to consider in memory"
-
-        # Generate content using structured_output_prompt
-        prompt_structure = f"""
-            <purpose>
-                Generate content for a new file based on the user's prompt, the file name, and the current memory content.
-            </purpose>
-
-            <instructions>
-                <instruction>Based on the user's prompt, the file name, and the current memory content, generate content for a new file.</instruction>
-                <instruction>The file name is the name of the file that the user wants to create.</instruction>
-                <instruction>The user's prompt is the prompt that the user wants to use to generate the content for the new file.</instruction>
-                <instruction>Consider the current memory content when generating the file content, if relevant.</instruction>
-                <instruction>If code generation was requested, be sure to output runnable code, don't include any markdown formatting.</instruction>
-            </instructions>
-
-            <user-prompt>
-                {prompt}
-            </user-prompt>
-
-            <file-name>
-                {file_name}
-            </file-name>
-
-            {memory_content}
-                """
-
+        
+        # Render select_file_prompt template
+        create_content_template = env.get_template("create_file_prompt.xml")
+        create_content_prompt = create_content_template.render(
+            file_name=file_name,
+            prompt=prompt,
+            memory_content=memory_content
+        )
+        
         response, model_used = structured_output_prompt(
-            prompt_structure, CreateFileResponse, model_name_to_id[model]
+            create_content_prompt, CreateFileResponse, model_name_to_id[model]
         )
         with open(file_path, "w") as f:
             f.write(parse_markdown_backticks(response.file_content))
+            
+        elements = [
+            cl.File(
+                name=response.file_name,
+                path=scratch_pad_dir + "/" + response.file_name,
+                display="inline",
+            )
+        ]
+
+        await cl.Message(content=response.file_content, elements=elements).send()
         return {"status": "file created", "file_name": file_name}
 
 
@@ -194,30 +192,22 @@ class UpdateFileTool(BaseTool):
         # List available files
         available_files = os.listdir(scratch_pad_dir)
         available_files_str = ", ".join(available_files)
-
-        # Prompt to select the file
-        select_file_prompt = f"""
-        <purpose>
-            Select a file from the available files based on the user's prompt.
-        </purpose>
-        <instructions>
-            <instruction>Based on the user's prompt and the list of available files, infer which file the user wants to update.</instruction>
-            <instruction>If no file matches, return an empty string for 'file'.</instruction>
-        </instructions>
-        <available-files>
-            {available_files_str}
-        </available-files>
-        <user-prompt>
-            {prompt}
-        </user-prompt>
-        """
-
+        
+        # Render select_file_prompt template
+        select_file_template = env.get_template("select_file_prompt.xml")
+        select_file_prompt = select_file_template.render(
+            available_files=available_files_str,
+            prompt=prompt
+        )
+        
         # Call LLM to select a file
         file_selection_response, model_used_file_select = structured_output_prompt(
             select_file_prompt, FileSelectionResponse, model_name_to_id[model]
         )
 
-        logger.info(f"🍓 Select File to Update Used the Model: {model_used_file_select}")
+        logger.info(
+            f"🍓 Select File to Update Used the Model: {model_used_file_select}"
+        )
 
         # If no file is selected
         if not file_selection_response.file:
@@ -229,32 +219,15 @@ class UpdateFileTool(BaseTool):
         # Read the content of the selected file
         with open(file_path, "r") as f:
             file_content = f.read()
-
-        # Build update prompt
-        update_file_prompt = f"""
-        <purpose>
-            Update the content of the file based on the user's prompt, the current file content, and the current memory content.
-        </purpose>
-        <instructions>
-            <instruction>Based on the user's prompt, the current file content, and the current memory content, generate the updated content for the file.</instruction>
-            <instruction>The file-name is the name of the file to update.</instruction>
-            <instruction>The user's prompt describes the updates to make.</instruction>
-            <instruction>Consider the current memory content when generating the file updates, if relevant.</instruction>
-            <instruction>Respond exclusively with the updates to the file and nothing else; they will be used to overwrite the file entirely using f.write().</instruction>
-            <instruction>Do not include any preamble or commentary or markdown formatting, just the raw updates.</instruction>
-            <instruction>Be precise and accurate.</instruction>
-        </instructions>
-        <file-name>
-            {selected_file}
-        </file-name>
-        <file-content>
-            {file_content}
-        </file-content>
-        <user-prompt>
-            {prompt}
-        </user-prompt>
-        """
-
+            
+        # Render update_file_prompt template
+        update_file_template = env.get_template("update_file_prompt.xml")
+        update_file_prompt = update_file_template.render(
+            file_name=selected_file,
+            file_content=file_content,
+            prompt=prompt
+        )
+        
         # Call LLM to generate file updates
         file_update_response, model_used_chat = chat_prompt(
             update_file_prompt, model_name_to_id[model]

@@ -9,4 +9,7 @@ dependencies = [
     "chainlit==2.0.dev0",
     "openai==1.54.0",
     "websockets==13.1",
+    "jinja2",
+    "requests",
+    "python-dotenv",
 ]

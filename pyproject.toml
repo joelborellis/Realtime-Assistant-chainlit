@@ -12,4 +12,5 @@ dependencies = [
     "jinja2",
     "requests",
     "python-dotenv",
+    "pydantic==2.10.1",
 ]

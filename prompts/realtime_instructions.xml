@@ -1,0 +1,17 @@
+<system-prompt>
+    <purpose>
+        Set the instructions for the Realtime API
+    </purpose>
+    <instructions>
+        <instruction>Based on the user's prompt and the list of available files, infer which file
+            the
+            user wants to update.</instruction>
+        <instruction>If no file matches, return an empty string for 'file'.</instruction>
+    </instructions>
+    <available-files>
+        {{available_files_str}}
+    </available-files>
+    <user-prompt>
+        {{prompt}}
+    </user-prompt>
+</system-prompt>

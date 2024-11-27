@@ -194,6 +194,7 @@ class RealtimeConversation:
         'response.audio.delta': lambda self, event: self._process_audio_delta(event),
         'response.text.delta': lambda self, event: self._process_text_delta(event),
         'response.function_call_arguments.delta': lambda self, event: self._process_function_call_arguments_delta(event),
+        'response.function_call_arguments.done': lambda self, event: self._process_function_call_arguments_done(event),
     }
     
     def __init__(self):
@@ -296,6 +297,7 @@ class RealtimeConversation:
             return None, None
         item['content'][content_index]['transcript'] = transcript
         item['formatted']['transcript'] = formatted_transcript
+        #print(transcript)
         return item, {'transcript': transcript}
 
     def _process_speech_started(self, event):
@@ -394,7 +396,13 @@ class RealtimeConversation:
         item['arguments'] += delta
         item['formatted']['tool']['arguments'] += delta
         return item, {'arguments': delta}
-
+    
+    def _process_function_call_arguments_done(self, event):
+        item_id = event['item_id']
+        item = self.item_lookup.get(item_id)
+        if not item:
+            raise Exception('response.function_call_arguments.done: Missing "item"')
+        return item, None
 
 class RealtimeClient(RealtimeEventHandler):
     def __init__(self, url=None, api_key=None):
@@ -402,7 +410,7 @@ class RealtimeClient(RealtimeEventHandler):
         self.default_session_config = {
             "modalities": ["text", "audio"],
             "instructions": "", # these will be set in app.py when RealtimeAudio client is instantiated
-            "voice": "shimmer",
+            "voice": "coral", # this is passed from the personalization file
             "input_audio_format": "pcm16",
             "output_audio_format": "pcm16",
             "input_audio_transcription": { "model": 'whisper-1' },
@@ -446,11 +454,12 @@ class RealtimeClient(RealtimeEventHandler):
         self.realtime.on("server.conversation.item.created", self._on_item_created)
         self.realtime.on("server.conversation.item.truncated", self._process_event)
         self.realtime.on("server.conversation.item.deleted", self._process_event)
-        self.realtime.on("server.conversation.item.input_audio_transcription.completed", self._process_event)
+        self.realtime.on("server.conversation.item.input_audio_transcription.completed", self._on_input_audio_completed)
         self.realtime.on("server.response.audio_transcript.delta", self._process_event)
         self.realtime.on("server.response.audio.delta", self._process_event)
         self.realtime.on("server.response.text.delta", self._process_event)
         self.realtime.on("server.response.function_call_arguments.delta", self._process_event)
+        self.realtime.on("server.response.function_call_arguments.done", self._on_function_call_arguments_done)
         self.realtime.on("server.response.output_item.done", self._on_output_item_done)
 
     def _log_event(self, event):
@@ -463,7 +472,19 @@ class RealtimeClient(RealtimeEventHandler):
 
     def _on_session_created(self, event):
         self.session_created = True
-
+    
+    def _on_input_audio_completed(self, event, *args):
+        item, delta = self.conversation.process_event(event, *args)
+        if item:
+            self.dispatch("conversation.item.input_audio_transcription.completed", event)
+        return item, delta
+    
+    def _on_function_call_arguments_done(self, event, *args):
+        item, delta = self.conversation.process_event(event, *args)
+        if item:
+            self.dispatch("response.function_call_arguments.done", event)
+        return item, delta
+    
     def _process_event(self, event, *args):
         item, delta = self.conversation.process_event(event, *args)
         if item:

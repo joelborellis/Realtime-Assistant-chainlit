@@ -79,10 +79,6 @@ class BingSearchTool(BaseTool):
                         "url": item.get("url")
                     })
             #print(results)
-            message = cl.user_session.get("current_assistant_transcript")
-            await cl.Message(
-                    content=f"{message}",
-                ).send()
             return {"status": "search suceeded", "results": results}
         except requests.exceptions.RequestException as e:
             print(f"An error occurred: {e}")

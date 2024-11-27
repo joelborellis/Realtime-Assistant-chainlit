@@ -43,31 +43,28 @@ async def setup_openai_realtime():
                 audio = delta['audio']  # Int16Array, audio added
                 await cl.context.emitter.send_audio_chunk(cl.OutputAudioChunk(mimeType="pcm16", data=audio, track=cl.user_session.get("track_id")))
             if 'transcript' in delta:
-                transcript = ' '.join(delta['transcript'].split())
-                cl.user_session.set(f"current_{item['role']}_transcript", transcript) # set the session with user AND assistant transcript
-                print(f"User: {cl.user_session.get("current_user_transcript")}")
-                print(f"Assistant: {cl.user_session.get("current_assistant_transcript")}")
+                transcript = delta['transcript']
                 pass
             if 'arguments' in delta:
                 arguments = delta['arguments']  # string, function arguments added
                 pass
             
     async def handle_item_completed(event):
-        """Used to populate the chat context with transcription once an item is completed."""        
-        #print(event.get("type"))
-        # Check if the role is "user"
-        #if event.get("item", {}).get("role") == "user":
-        #    # Extract the text
-        #    content = event.get("item", {}).get("content", [])
-        #    if content:  # Ensure the content list is not empty
-        #        print(content)
-        #        text = content[0].get("text")
-        #        print(f"Extracted text: {text}")
-        #    else:
-        #        print("No content found.")
-        #else:
-        #   print("Role is not 'user'.")
-        #pass
+        """Used to populate the chat context with transcription once an item is completed."""    
+        #print(event.get("type"))    
+        pass
+    
+    async def handle_conversation_input_completed(event):
+        """Used to populate the chat context with transcription once an item is completed.""" 
+        transcript = event.get("transcript")      
+        print(transcript.replace("\r", "").replace("\n", ""))
+        #await cl.Message(content=transcript.replace("\r", "").replace("\n", "")).send()
+        pass
+
+    async def handle_function_call_arguments_done(event):
+        """Used to populate the chat context with transcription once an item is completed.""" 
+        #print(event)
+        pass
     
     async def handle_conversation_interrupt(event):
         """Used to cancel the client previous audio playback."""
@@ -80,6 +77,8 @@ async def setup_openai_realtime():
     openai_realtime.on('conversation.updated', handle_conversation_updated)
     openai_realtime.on('conversation.item.completed', handle_item_completed)
     openai_realtime.on('conversation.interrupted', handle_conversation_interrupt)
+    openai_realtime.on('conversation.item.input_audio_transcription.completed', handle_conversation_input_completed) # get the transcribed text that the user voiced
+    openai_realtime.on('response.function_call_arguments.done', handle_function_call_arguments_done) # get the transcribed text that the user voiced
     openai_realtime.on('error', handle_error)
 
     coros = [openai_realtime.add_tool(tool_def, tool_handler) for tool_def, tool_handler in tools]

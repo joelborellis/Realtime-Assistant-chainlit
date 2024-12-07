@@ -25,9 +25,9 @@ def structured_output_prompt(
     )
 
     model_used = completion.model
-    #print(f"used model: {model}")
+    print(f"structured output prompt used model: {model}")
     message = completion.choices[0].message
-    print(message.parsed)
+    #print(message.parsed)
 
     if not message.parsed:
         raise ValueError(message.refusal)
@@ -56,6 +56,7 @@ def chat_prompt(prompt: str, model: str) -> str:
     )
 
     model_used = completion.model
+    print(f"chat prompt used model: {model}")
     message = completion.choices[0].message
 
     return message.content, model_used
@@ -120,7 +121,7 @@ def model_predictive_prompt(prompt: str) -> str:
     print(model_selected)
     return model_selected
 
-def image_prompt(prompt: str, model: str) -> str:
+def create_image_prompt(prompt: str, model: str) -> str:
     """
     Call an image generation model to generate an image.
 
@@ -146,6 +147,47 @@ def image_prompt(prompt: str, model: str) -> str:
     
     return image_url
 
+
+
+def describe_image_prompt(prompt: str, image_url: str, model: str) -> str:
+    """
+    Call a model to describe an image.
+
+    Args:
+        prompt (str): The prompt to send to the Image generation model like Dall-e or Groq API.
+        iimage_url (str): The url link to the image to be described.
+        model (str): The model ID to use for the API call.
+
+    Returns:
+        str: The assistant's response.
+    """
+
+    client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+    response = client.chat.completions.create(
+    model=model,
+    messages=[
+        {
+        "role": "user",
+        "content": [
+            {
+            "type": "text",
+            "text": prompt,
+            },
+            {
+            "type": "image_url",
+            "image_url": {
+                "url":  image_url,
+            },
+            },
+        ],
+        }
+    ],
+    )
+
+    print(response.choices[0].message.content)
+
+    return response.choices[0].message.content
 
 def parse_markdown_backticks(str) -> str:
     if "```" not in str:

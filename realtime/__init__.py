@@ -612,6 +612,7 @@ class RealtimeClient(RealtimeEventHandler):
 
     async def send_user_message_content(self, content=[]):
         if content:
+            print(f"send_user_message_content:  {content}")
             for c in content:
                 if c["type"] == "input_audio":
                     if isinstance(c["audio"], (bytes, bytearray)):

@@ -5,16 +5,18 @@ import functools
 import asyncio
 import time
 from datetime import datetime
-from dotenv import load_dotenv
+from azure.storage.blob import BlobServiceClient
+from dotenv import dotenv_values
 
-load_dotenv()
+config = dotenv_values(".env")
 
 RUN_TIME_TABLE_LOG_JSON = "runtime_time_table.jsonl"
 # Load personalization settings
-personalization_file = os.getenv("PERSONALIZATION_FILE", "./personalization.json")
+personalization_file = config.get('PERSONALIZATION_FILE', "./personalization.json")
 with open(personalization_file, "r") as f:
     personalization = json.load(f)
-BING_SEARCH_KEY = os.getenv("BING_SEARCH_KEY", "")
+BING_SEARCH_KEY = config.get("BING_SEARCH_KEY", "")
+AZURE_STORAGE_CONNECTION_STRING = config.get("AZURE_STORAGE_CONNECTION_STRING", "")
 
 class ModelName(str, Enum):
     state_of_the_art_model = "state_of_the_art_model"
@@ -30,8 +32,8 @@ model_name_to_id = {
     ModelName.state_of_the_art_model: "o1-preview",
     ModelName.reasoning_model: "o1-mini",
     ModelName.sonnet_model: "claude-3-5-sonnet-20240620",
-    ModelName.base_model: "gpt-4o-2024-08-06",
-    ModelName.fast_model: "gpt-4o-mini-2024-07-18",
+    ModelName.base_model: "gpt-4o",
+    ModelName.fast_model: "gpt-4o-mini",
     ModelName.image_model: "dall-e-3",
 }
 
@@ -55,7 +57,7 @@ def timeit_decorator(func):
         start_time = time.perf_counter()
         # Retrieve model from kwargs if present; default to None if not
         #print(args)
-        print(kwargs)
+        print(f"kwargs passed to the function:  {kwargs}")
         model = kwargs.get("model", None)
         prompt = kwargs.get("prompt", None)
         async_wrapper.model = model  # Assign model to wrapper attribute, defaulting to None if not provided
@@ -126,3 +128,37 @@ def timeit_decorator(func):
         return result
 
     return async_wrapper if asyncio.iscoroutinefunction(func) else sync_wrapper
+
+def upload_file_to_images_container(filename, file):
+    """
+    Uploads a given file-like object to the 'images' container in Azure Blob Storage.
+    
+    Parameters:
+        file: A file-like object (e.g. from a framework's request.files) with a 'filename' attribute.
+        connection_string: Your Azure Blob Storage connection string.
+        
+    Returns:
+        The URL of the uploaded blob.
+    """
+
+    #print(f"connect string:  {AZURE_STORAGE_CONNECTION_STRING}")
+    #print(f"file name:  {file.name}")
+
+    # The name of the container where we want to store the file
+    container_name = "images"
+
+    # Initialize a BlobServiceClient using the provided connection string
+    blob_service_client = BlobServiceClient.from_connection_string(AZURE_STORAGE_CONNECTION_STRING)
+
+    # Create a blob client for the specific file
+    # Note: `file.filename` should be provided by the file-like object
+    blob_client = blob_service_client.get_blob_client(container=container_name, blob=filename)
+
+    # Upload the file's content to the blob
+    # If file is a file-like object, we can pass it directly.
+    # If it's a path or needs to be read differently, adjust accordingly.
+    blob_client.upload_blob(file, overwrite=True)
+
+    # Construct the blob's URL (this is generally <base_url>/<container>/<blob>)
+    blob_url = blob_client.url
+    return blob_url

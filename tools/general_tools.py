@@ -41,6 +41,10 @@ class BingSearchTool(BaseTool):
                         "type": "string",
                         "description": "Prompt describing what to search for on the internet.",
                     },
+                    "count": {
+                        "type": "integer",
+                        "description": "The nummber of search results to retrieve.",
+                    },
                 },
                 "required": ["prompt"],
             },
@@ -63,6 +67,7 @@ class BingSearchTool(BaseTool):
         """
         url = "https://api.bing.microsoft.com/v7.0/search"
         headers = {"Ocp-Apim-Subscription-Key": api_key}
+        print(count)
         params = {"q": prompt, "count": count, "textDecorations": True, "textFormat": "HTML"}
 
         try:

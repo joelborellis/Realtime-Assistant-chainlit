@@ -1,20 +1,21 @@
 import asyncio
 from openai import AsyncOpenAI
-import json
+from uuid import uuid4
+import base64
 
 import chainlit as cl
-from uuid import uuid4
 from chainlit.logger import logger
+from chainlit.input_widget import Select, Switch, Slider
 
 from realtime import RealtimeClient
-from utils.utils import SESSION_INSTRUCTIONS, voice
+from utils.utils import SESSION_INSTRUCTIONS, voice, upload_file_to_images_container
 from tools.general_tools import GetCurrentTimeTool
 from tools.general_tools import GetRandomNumberTool
 from tools.general_tools import BingSearchTool
 from tools.file_tools import CreateFileTool
 from tools.file_tools import DeleteFileTool
 from tools.file_tools import UpdateFileTool
-from tools.image_tools import GenerateImageTool
+from tools.image_tools import GenerateImageTool, DescribeImageTool
 
 client = AsyncOpenAI()  
 
@@ -26,6 +27,7 @@ tools = [
     GetCurrentTimeTool().get_tool(), # returns the def and handle
     GetRandomNumberTool().get_tool(), # returns the def and handle
     BingSearchTool().get_tool(), # returns the def and handle
+    DescribeImageTool().get_tool(), # returns the def and handle
 ]  
 
 async def setup_openai_realtime():
@@ -51,14 +53,28 @@ async def setup_openai_realtime():
             
     async def handle_item_completed(event):
         """Used to populate the chat context with transcription once an item is completed."""    
-        #print(event.get("type"))    
+        item = event.get("item")
+
+        # Check if item exists and has the required keys
+        if item and item.get("type") == "message" and item.get("status") and item.get("role") == "assistant":
+            content = item.get("content")
+            if content:
+                # Assuming content is a list of dictionaries, extract the first transcript
+                #print(f"{item.get('type')} : {item.get('role')} : {content[0].get('transcript', 'Transcript not found')}")
+                await cl.Message(
+                    content=content[0].get('transcript', 'Transcript not found')
+                ).send()
+
         pass
     
     async def handle_conversation_input_completed(event):
         """Used to populate the chat context with transcription once an item is completed.""" 
-        transcript = event.get("transcript")      
-        print(transcript.replace("\r", "").replace("\n", ""))
-        #await cl.Message(content=transcript.replace("\r", "").replace("\n", "")).send()
+        #print(event)
+        if event and event.get("type") == "conversation.item.input_audio_transcription.completed":
+            transcript = event.get("transcript")   
+            if transcript:   
+                print(transcript.replace("\r", "").replace("\n", ""))
+
         pass
 
     async def handle_function_call_arguments_done(event):
@@ -93,12 +109,35 @@ async def start():
     ).send()
     await setup_openai_realtime()
 
+
 @cl.on_message
 async def on_message(message: cl.Message):
     openai_realtime: RealtimeClient = cl.user_session.get("openai_realtime")
-    if openai_realtime and openai_realtime.is_connected():
+    if openai_realtime and openai_realtime.is_connected(): 
         # TODO: Try image processing with message.elements
-        await openai_realtime.send_user_message_content([{ "type": 'input_text', "text": message.content }])
+        if not message.elements:  # this means there was not an attachment
+            await openai_realtime.send_user_message_content([{ "type": 'input_text', "text": message.content}])
+        else:
+            # create an image url from the uploaded image
+            # Processing images exclusively
+            #print(f"message.elememnts:  {message.elements}")  # will be the actual name of the file
+
+            files = []
+            for file in message.elements:
+                if "image" in file.mime:
+                    # Append the file object to a list if needed
+                    files.append(file)
+                elif "pdf" in file.mime:
+                    print("pdf")
+
+            if files:
+                # Read the first image only so index [0]
+                with open(files[0].path, "rb") as f:
+                    url = upload_file_to_images_container(files[0].name, f)
+                    # Do something with the file name
+                    print("File url:", url)
+
+            await openai_realtime.send_user_message_content([{ "type": 'input_text', "text": f"{message.content}: image: {url}" }])
     else:
         await cl.Message(content="Please activate voice mode before sending messages!").send()
 

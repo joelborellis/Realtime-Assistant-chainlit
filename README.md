@@ -21,7 +21,8 @@ The Assistant has a tools that are implemented as functions and they can perform
 - **delete_file**: Delete a file.  This tool/agent not just delees a file but showcases how you can send back a clarification to the user confirming the operation.  So for example say "Hey Ada, delete the file myfile.csv".  Ada might ask you to confirm the delete by using the phrase "force delete".  
 - **generate_image**:  Generate and image.  This tool/agent creates images using a very simple system prompt using an image model (currently Dall-e-3)
 - **get_current_time**:  Simple tool/agent just to test that function calls are working.  Repeats the current date and time.
-- **generate_raandom_number**:  Simple tool/agent to test that funtions calls are working.  Generates a random number.
+- **generate_random_number**:  Simple tool/agent to test that funtions calls are working.  Generates a random number.
+- **bing_search**:  Simple tool/agent to search the internet.  Try asking current questions like "Who won the 2024 baseball World Series?
 
 ## Other concepts this project will hightlight
 

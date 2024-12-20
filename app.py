@@ -1,7 +1,6 @@
 import asyncio
 from openai import AsyncOpenAI
 from uuid import uuid4
-import base64
 
 import chainlit as cl
 from chainlit.logger import logger

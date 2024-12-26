@@ -58,7 +58,7 @@ class DescribeImageTool(BaseTool):
                     },
                     "image_url": {
                         "type": "string",
-                        "description": "The url of the image to describe",
+                        "description": "The url of the image to describe.",
                     },
                     "model": {
                         "type": "string",
@@ -80,8 +80,6 @@ class DescribeImageTool(BaseTool):
             image_url=image_url,
             prompt=prompt
         )
-        
-        print(describe_image_prompt)
 
         description = describe_image_prompt(describe_prompt, image_url, model_name_to_id[model])
 

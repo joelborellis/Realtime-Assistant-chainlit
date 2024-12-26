@@ -4,10 +4,10 @@ from uuid import uuid4
 
 import chainlit as cl
 from chainlit.logger import logger
-from chainlit.input_widget import Select, Switch, Slider
+
 
 from realtime import RealtimeClient
-from utils.utils import SESSION_INSTRUCTIONS, voice, upload_file_to_images_container
+from utils.utils import voice, upload_file_to_images_container, realtime_prompt
 from tools.general_tools import GetCurrentTimeTool
 from tools.general_tools import GetRandomNumberTool
 from tools.general_tools import BingSearchTool
@@ -32,7 +32,7 @@ tools = [
 async def setup_openai_realtime():
     """Instantiate and configure the OpenAI Realtime Client"""
     openai_realtime = RealtimeClient()
-    await openai_realtime.update_session(instructions=SESSION_INSTRUCTIONS, voice=voice) # set the instructions
+    await openai_realtime.update_session(instructions=realtime_prompt, voice=voice) # set the instructions
     cl.user_session.set("track_id", str(uuid4()))
     async def handle_conversation_updated(event):
         item = event.get("item")

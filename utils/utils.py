@@ -1,22 +1,30 @@
-from enum import Enum
-import os
-import json
-import functools
 import asyncio
+import functools
+import json
+import os
 import time
 from datetime import datetime
-from azure.storage.blob import BlobServiceClient
-from dotenv import dotenv_values
+from enum import Enum
 
+from azure.core.exceptions import AzureError
+from azure.storage.blob import BlobServiceClient
+from azure.core.exceptions import ResourceExistsError
+from dotenv import dotenv_values
+from jinja2 import Environment, FileSystemLoader, TemplateNotFound
+
+# Load environment variables
 config = dotenv_values(".env")
 
+# Constants and configurations
+PROMPT_DIR = "prompts"  # Directory where your XML templates are stored
 RUN_TIME_TABLE_LOG_JSON = "runtime_time_table.jsonl"
-# Load personalization settings
-personalization_file = config.get('PERSONALIZATION_FILE', "./personalization.json")
-with open(personalization_file, "r") as f:
-    personalization = json.load(f)
-BING_SEARCH_KEY = config.get("BING_SEARCH_KEY", "")
-AZURE_STORAGE_CONNECTION_STRING = config.get("AZURE_STORAGE_CONNECTION_STRING", "")
+PERSONALIZATION_FILE = config.get("PERSONALIZATION_FILE", "./personalization.json")
+
+# Attempt to load Jinja2 environment
+try:
+    env = Environment(loader=FileSystemLoader(PROMPT_DIR), autoescape=True)
+except Exception as e:
+    raise RuntimeError(f"Failed to initialize Jinja environment: {e}")
 
 class ModelName(str, Enum):
     state_of_the_art_model = "state_of_the_art_model"
@@ -25,7 +33,6 @@ class ModelName(str, Enum):
     base_model = "base_model"
     fast_model = "fast_model"
     image_model = "image_model"
-
 
 # Mapping from enum options to model IDs
 model_name_to_id = {
@@ -37,128 +44,143 @@ model_name_to_id = {
     ModelName.image_model: "dall-e-3",
 }
 
-# Load personalization settings
-personalization_file = os.getenv("PERSONALIZATION_FILE", "./personalization.json")
-with open(personalization_file, "r") as f:
-    personalization = json.load(f)
+# Load personalization settings with exception handling
+try:
+    with open(PERSONALIZATION_FILE, "r", encoding="utf-8") as f:
+        personalization = json.load(f)
+except FileNotFoundError:
+    # If the file doesn't exist, fallback to defaults
+    personalization = {}
+except json.JSONDecodeError as e:
+    raise ValueError(f"Error decoding JSON from {PERSONALIZATION_FILE}: {e}")
 
 ai_assistant_name = personalization.get("ai_assistant_name", "Assistant")
 human_name = personalization.get("human_name", "User")
+suffix = personalization.get("system_message_suffix", "")
 voice = personalization.get("voice", "alloy")
 
-SESSION_INSTRUCTIONS = (
-    f"System settings:\nTool use: enabled.\n\nInstructions:\n- You are {ai_assistant_name}, a helpful assistant. Respond to {human_name}.  You are responsible for helping test realtime voice capabilities\n- Please make sure to respond with a helpful voice via audio\n- Be kind, helpful, and curteous\n- It is okay to ask the user questions\n- Use tools and functions you have available liberally, it is part of the training apparatus\n- Be open to exploration and conversation\n- Remember: this is just for fun and testing!\n\nPersonality:\n- Be upbeat and genuine\n- Try speaking quickly as if excited\n\n"
-    f"{personalization.get('system_message_suffix', '')}"
-)
+# Render the realtime prompt template
+try:
+    realtime_template = env.get_template("realtime_prompt.xml")
+    realtime_prompt = realtime_template.render(
+        ai_assistant_name=ai_assistant_name,
+        human_name=human_name,
+        suffix=suffix
+    )
+except TemplateNotFound:
+    raise FileNotFoundError("The template 'realtime_prompt.xml' could not be found in the prompts directory.")
+except Exception as e:
+    raise RuntimeError(f"Error rendering realtime prompt: {e}")
 
 def timeit_decorator(func):
-    @functools.wraps(func)
-    async def async_wrapper(*args, **kwargs):
-        start_time = time.perf_counter()
-        # Retrieve model from kwargs if present; default to None if not
-        #print(args)
-        print(f"kwargs passed to the function:  {kwargs}")
-        model = kwargs.get("model", None)
-        prompt = kwargs.get("prompt", None)
-        async_wrapper.model = model  # Assign model to wrapper attribute, defaulting to None if not provided
-            
-        result = await func(*args, **kwargs)
-        end_time = time.perf_counter()
-        duration = round(end_time - start_time, 4)
+    """
+    A decorator that times the execution of both sync and async functions.
+    It logs the function name, execution duration, and optionally the model used.
+    Logs are appended to a JSONL file defined by RUN_TIME_TABLE_LOG_JSON.
+    """
 
-        # `args[0]` refers to the instance (`self`) of the tool class
-        instance = args[0] if len(args) > 0 else None
-        #description = getattr(instance, "description", func.__name__)
-        name = getattr(instance, "name", func.__name__)
-        
-        print(f"⏰ {name}() took {duration:.4f} seconds")
-        
+    def log_time_record(name, duration, model, prompt=None):
         # Prepare to log the model usage
-        model_name = model_name_to_id.get(async_wrapper.model, "unknown")
-
-        jsonl_file = RUN_TIME_TABLE_LOG_JSON
-
-        # Create new time record
+        model_id = model_name_to_id.get(model, "unknown")
         time_record = {
             "timestamp": datetime.now().isoformat(),
             "function": name,
-            "prompt": prompt,
             "duration": f"{duration:.4f}",
-            "model": f"{async_wrapper.model} - {model_name}",
+            "model": f"{model} - {model_id}"
         }
+        if prompt is not None:
+            time_record["prompt"] = prompt
 
-        # Append the new record to the JSONL file
-        with open(jsonl_file, "a") as file:
-            json.dump(time_record, file)
-            file.write("\n")
+        try:
+            with open(RUN_TIME_TABLE_LOG_JSON, "a", encoding="utf-8") as file:
+                json.dump(time_record, file)
+                file.write("\n")
+        except IOError as e:
+            # If logging fails, print a warning to console (non-blocking)
+            print(f"Warning: Could not write to {RUN_TIME_TABLE_LOG_JSON}: {e}")
 
+    @functools.wraps(func)
+    async def async_wrapper(*args, **kwargs):
+        start_time = time.perf_counter()
+        model = kwargs.get("model", None)
+        prompt = kwargs.get("prompt", None)
+
+        try:
+            result = await func(*args, **kwargs)
+        except Exception as e:
+            print(f"Error in async function {func.__name__}: {e}")
+            raise
+
+        end_time = time.perf_counter()
+        duration = round(end_time - start_time, 4)
+
+        # Attempt to get instance name if first arg is self
+        instance = args[0] if args else None
+        name = getattr(instance, "name", func.__name__)
+        print(f"⏰ {name}() took {duration:.4f} seconds")
+
+        # Log the time record
+        log_time_record(name, duration, model, prompt)
         return result
 
     @functools.wraps(func)
     def sync_wrapper(*args, **kwargs):
         start_time = time.perf_counter()
-        
-        # Retrieve model from kwargs if present; default to None if not
         model = kwargs.get("model", None)
-        async_wrapper.model = model  # Assign model to wrapper attribute, defaulting to None if not provided
-            
-        result = func(*args, **kwargs)
+
+        try:
+            result = func(*args, **kwargs)
+        except Exception as e:
+            print(f"Error in sync function {func.__name__}: {e}")
+            raise
+
         end_time = time.perf_counter()
         duration = round(end_time - start_time, 4)
-        print(f"⏰ {func.__name__}() took {duration:.4f} seconds")
-        
-        # Prepare to log the model usage
-        model_name = model_name_to_id.get(async_wrapper.model, "unknown")
+        name = func.__name__
+        print(f"⏰ {name}() took {duration:.4f} seconds")
 
-        jsonl_file = RUN_TIME_TABLE_LOG_JSON
-
-        # Create new time record
-        time_record = {
-            "timestamp": datetime.now().isoformat(),
-            "function": func.__name__,
-            "duration": f"{duration:.4f}",
-            "model": f"{sync_wrapper.model} - {model_name}",
-        }
-
-        # Append the new record to the JSONL file
-        with open(jsonl_file, "a") as file:
-            json.dump(time_record, file)
-            file.write("\n")
-
+        # Log the time record
+        log_time_record(name, duration, model)
         return result
 
+    # Decide which wrapper to return based on whether func is async
     return async_wrapper if asyncio.iscoroutinefunction(func) else sync_wrapper
 
 def upload_file_to_images_container(filename, file):
     """
-    Uploads a given file-like object to the 'images' container in Azure Blob Storage.
+    Upload a given file-like object to the 'images' container in Azure Blob Storage.
     
     Parameters:
-        file: A file-like object (e.g. from a framework's request.files) with a 'filename' attribute.
-        connection_string: Your Azure Blob Storage connection string.
-        
+        filename (str): The name of the file (blob) to store in Azure.
+        file (file-like): The file-like object to upload. Must support .read().
+    
     Returns:
-        The URL of the uploaded blob.
+        str: The URL of the uploaded blob.
+    
+    Raises:
+        ValueError: If the Azure connection string is not provided.
+        RuntimeError: For general Azure upload errors.
     """
+    AZURE_STORAGE_CONNECTION_STRING = config.get("AZURE_STORAGE_CONNECTION_STRING", "")
+    if not AZURE_STORAGE_CONNECTION_STRING:
+        raise ValueError("Azure storage connection string not configured.")
 
-    #print(f"connect string:  {AZURE_STORAGE_CONNECTION_STRING}")
-    #print(f"file name:  {file.name}")
-
-    # The name of the container where we want to store the file
     container_name = "images"
 
-    # Initialize a BlobServiceClient using the provided connection string
-    blob_service_client = BlobServiceClient.from_connection_string(AZURE_STORAGE_CONNECTION_STRING)
+    try:
+        blob_service_client = BlobServiceClient.from_connection_string(AZURE_STORAGE_CONNECTION_STRING)
+        blob_client = blob_service_client.get_blob_client(container=container_name, blob=filename)
+        
+        # Upload the file and overwrite if it already exists
+        blob_client.upload_blob(file, overwrite=True)
 
-    # Create a blob client for the specific file
-    # Note: `file.filename` should be provided by the file-like object
-    blob_client = blob_service_client.get_blob_client(container=container_name, blob=filename)
+        # Construct and return the blob URL
+        return blob_client.url
 
-    # Upload the file's content to the blob
-    # If file is a file-like object, we can pass it directly.
-    # If it's a path or needs to be read differently, adjust accordingly.
-    blob_client.upload_blob(file, overwrite=True)
-
-    # Construct the blob's URL (this is generally <base_url>/<container>/<blob>)
-    blob_url = blob_client.url
-    return blob_url
+    except ResourceExistsError:
+        # This should not occur due to overwrite=True, but included for completeness
+        raise RuntimeError(f"The blob '{filename}' already exists and could not be overwritten.")
+    except AzureError as e:
+        raise RuntimeError(f"Failed to upload file to Azure Blob Storage: {e}")
+    except Exception as e:
+        raise RuntimeError(f"An unexpected error occurred during the file upload: {e}")

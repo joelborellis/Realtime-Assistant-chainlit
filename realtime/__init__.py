@@ -76,7 +76,6 @@ class RealtimeEventHandler:
         self.on(event_name, handler)
         return await future
 
-
 class RealtimeAPI(RealtimeEventHandler):
     def __init__(   
         self,

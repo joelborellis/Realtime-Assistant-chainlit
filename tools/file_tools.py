@@ -227,13 +227,15 @@ class UpdateFileTool(BaseTool):
             file_content=file_content,
             prompt=prompt
         )
+
+        logger.info(f"🍓 Update file prompt: {update_file_prompt}")
         
         # Call LLM to generate file updates
         file_update_response, model_used_chat = chat_prompt(
             update_file_prompt, model_name_to_id[model]
         )
 
-        logger.info(f"🍓 Update File Used the Model: {model_used_chat}")
+        logger.info(f"🍓 File Update Response: {file_update_response}")
 
         # Write the updated content to the file
         with open(file_path, "w") as f:

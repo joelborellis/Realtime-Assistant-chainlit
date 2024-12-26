@@ -1,9 +1,12 @@
 from datetime import datetime
 from .base_tool import BaseTool
-from utils.utils import timeit_decorator, BING_SEARCH_KEY
+from utils.utils import timeit_decorator
 import random
 import requests
 import chainlit as cl
+from dotenv import dotenv_values
+
+config = dotenv_values(".env")
 
 class GetCurrentTimeTool(BaseTool):
     def __init__(self):
@@ -52,7 +55,7 @@ class BingSearchTool(BaseTool):
         
     @timeit_decorator
     async def handle(
-        self, prompt: str, api_key: str = BING_SEARCH_KEY, count: int = 10
+        self, prompt: str, count: int = 10
     ) -> dict:
         """
         Perform a Bing web search.
@@ -65,8 +68,10 @@ class BingSearchTool(BaseTool):
         Returns:
             list: A list of search results, each containing title, snippet, and URL.
         """
+        BING_SEARCH_KEY = config.get("BING_SEARCH_KEY", "")
+
         url = "https://api.bing.microsoft.com/v7.0/search"
-        headers = {"Ocp-Apim-Subscription-Key": api_key}
+        headers = {"Ocp-Apim-Subscription-Key": BING_SEARCH_KEY}
         print(count)
         params = {"q": prompt, "count": count, "textDecorations": True, "textFormat": "HTML"}
 

@@ -5,6 +5,7 @@
     <instructions>
         <instruction>Based on the user's prompt, describe the contents of the image file.</instruction>
         <instruction>The user's prompt describes what the user wants to know about the image.</instruction>
+        <instruction>The image you are describing will be accessed via a url.</instruction>
     </instructions>
     <image-url>
         {{image_url}}

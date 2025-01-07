@@ -192,12 +192,21 @@ class UpdateFileTool(BaseTool):
         # List available files
         available_files = os.listdir(scratch_pad_dir)
         available_files_str = ", ".join(available_files)
+
+        logger.info(
+            f"🍓 Available files in update file (list from /scratchpad): {available_files_str}"
+        )
+    
         
         # Render select_file_prompt template
         select_file_template = env.get_template("select_file_prompt.xml")
         select_file_prompt = select_file_template.render(
-            available_files=available_files_str,
+            available_files_str=available_files_str,
             prompt=prompt
+        )
+
+        logger.info(
+            f"🍓 Select file prompt: {select_file_prompt}"
         )
         
         # Call LLM to select a file
@@ -206,7 +215,7 @@ class UpdateFileTool(BaseTool):
         )
 
         logger.info(
-            f"🍓 Select File to Update Used the Model: {model_used_file_select}"
+            f"🍓 Select File to Update found the file: {file_selection_response.file}"
         )
 
         # If no file is selected
@@ -223,7 +232,7 @@ class UpdateFileTool(BaseTool):
         # Render update_file_prompt template
         update_file_template = env.get_template("update_file_prompt.xml")
         update_file_prompt = update_file_template.render(
-            file_name=selected_file,
+            selected_file=selected_file,
             file_content=file_content,
             prompt=prompt
         )
@@ -240,6 +249,16 @@ class UpdateFileTool(BaseTool):
         # Write the updated content to the file
         with open(file_path, "w") as f:
             f.write(parse_markdown_backticks(file_update_response))
+        
+        elements = [
+            cl.File(
+                name=selected_file,
+                path=scratch_pad_dir + "/" + selected_file,
+                display="inline",
+            )
+        ]
+
+        await cl.Message(content=file_update_response, elements=elements).send()
 
         return {
             "status": "File updated",

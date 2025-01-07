@@ -3,9 +3,7 @@
         Select a file from the available files based on the user's prompt.
     </purpose>
     <instructions>
-        <instruction>Based on the user's prompt and the list of available files, infer which file
-            the
-            user wants to update.</instruction>
+        <instruction>Based on the user's prompt and the list of available files, infer which file the user wants to update.</instruction>
         <instruction>If no file matches, return an empty string for 'file'.</instruction>
     </instructions>
     <available-files>

@@ -1,11 +1,12 @@
 import os
 from utils.llm import structured_output_prompt, parse_markdown_backticks, chat_prompt
 from .base_tool import BaseTool
-from utils.utils import ModelName, model_name_to_id, timeit_decorator
+from utils.utils import ModelName, model_name_to_id, timeit_decorator, convert_escaped_html_to_xml
 from pydantic import BaseModel
 from chainlit.logger import logger
 from jinja2 import Environment, FileSystemLoader
 import chainlit as cl
+from utils.memory_management import memory_manager
 
 # Load Jinja2 environment
 PROMPT_DIR = "prompts"  # Directory where your XML templates are stored
@@ -57,8 +58,10 @@ class CreateFileTool(BaseTool):
             return {"status": "file already exists"}
 
         # Get all memory content
-        # memory_content = memory_manager.get_xml_for_prompt(["*"])  # need to implement this
-        memory_content = "No real content to consider in memory"
+        memory_content = memory_manager.get_xml_for_prompt(["*"])
+        #memory_content_xml =  convert_escaped_html_to_xml(memory_content)
+
+        #print(memory_content_xml)
         
         # Render select_file_prompt template
         create_content_template = env.get_template("create_file_prompt.xml")
@@ -66,6 +69,10 @@ class CreateFileTool(BaseTool):
             file_name=file_name,
             prompt=prompt,
             memory_content=memory_content
+        )
+
+        logger.info(
+            f"🍓 Memory content used for create file prompt: {convert_escaped_html_to_xml(create_content_prompt)}"
         )
         
         response, model_used = structured_output_prompt(
@@ -229,12 +236,16 @@ class UpdateFileTool(BaseTool):
         with open(file_path, "r") as f:
             file_content = f.read()
             
+        # Get all memory content
+        memory_content = memory_manager.get_xml_for_prompt(["*"])
+
         # Render update_file_prompt template
         update_file_template = env.get_template("update_file_prompt.xml")
         update_file_prompt = update_file_template.render(
             selected_file=selected_file,
             file_content=file_content,
-            prompt=prompt
+            prompt=prompt,
+            memory_content=memory_content
         )
 
         logger.info(f"🍓 Update file prompt: {update_file_prompt}")

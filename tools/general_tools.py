@@ -3,7 +3,6 @@ from .base_tool import BaseTool
 from utils.utils import timeit_decorator
 import random
 import requests
-import chainlit as cl
 from dotenv import dotenv_values
 
 config = dotenv_values(".env")

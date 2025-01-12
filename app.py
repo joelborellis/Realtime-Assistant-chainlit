@@ -15,6 +15,7 @@ from tools.file_tools import CreateFileTool
 from tools.file_tools import DeleteFileTool
 from tools.file_tools import UpdateFileTool
 from tools.image_tools import GenerateImageTool, DescribeImageTool
+from tools.memory_tools import AddToMemoryTool, IngestMemoryTool, ResetActiveMemoryTool
 
 client = AsyncOpenAI()  
 
@@ -27,6 +28,9 @@ tools = [
     GetRandomNumberTool().get_tool(), # returns the def and handle
     BingSearchTool().get_tool(), # returns the def and handle
     DescribeImageTool().get_tool(), # returns the def and handle
+    AddToMemoryTool().get_tool(), # returns the def and handle
+    IngestMemoryTool().get_tool(), # returns the def and handle
+    ResetActiveMemoryTool().get_tool() # returns the def and handle
 ]  
 
 async def setup_openai_realtime():

@@ -12,7 +12,7 @@ import base64
 import uuid
 
 from chainlit.logger import logger
-from chainlit.config import config
+from chainlit.config import config # reads from the config.toml file for chainlit
 
 
 def float_to_16bit_pcm(float32_array):
@@ -110,7 +110,7 @@ class RealtimeAPI(RealtimeEventHandler):
     def log(self, *args):
         logger.debug(f"[Websocket/{datetime.now(UTC).isoformat()}]", *args)
 
-    async def connect(self, model='gpt-4o-realtime-preview-2024-12-17'):
+    async def connect(self, model='gpt-4o-realtime-preview'):
         if self.is_connected():
             raise Exception("Already connected")
         if self.use_azure:
@@ -145,7 +145,8 @@ class RealtimeAPI(RealtimeEventHandler):
         async for message in self.ws:
             event = json.loads(message)
             if event['type'] == "error":
-                logger.error("ERROR", event)
+                print("here we are")
+                logger.error("❌ ERROR", message)
             self.log("received:", event)
             self.dispatch(f"server.{event['type']}", event)
             self.dispatch("server.*", event)
@@ -368,7 +369,7 @@ class RealtimeConversation:
         delta = event['delta']
         item = self.item_lookup.get(item_id)
         if not item:
-            logger.debug(f'response.audio.delta: Item "{item_id}" not found')
+            logger.debug(f'⚠️ response.audio.delta: Item "{item_id}" not found')
             return None, None
         array_buffer = base64_to_array_buffer(delta)
         append_values = array_buffer.tobytes()
@@ -525,7 +526,7 @@ class RealtimeClient(RealtimeEventHandler):
                 }
             })
         except Exception as e:
-            logger.error(f"Tool call error: {json.dumps({"error": str(e)})}")
+            logger.error(f"❌ Tool call error: {json.dumps({"error": str(e)})}")
             await self.realtime.send("conversation.item.create", {
                 "item": {
                     "type": "function_call_output",

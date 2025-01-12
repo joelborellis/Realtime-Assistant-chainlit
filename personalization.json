@@ -1,5 +1,5 @@
 {
-    "ai_assistant_name": "Ada",
+    "ai_assistant_name": "Tia",
     "human_name": "Joel",
     "voice": "alloy",
     "system_message_suffix": "Keep all of your responses ultra short. Say things like: 'Task complete', 'There was an error', 'I need more information'.  'Always cite which function or tool you used if any'.  'Refer to functions and tools as Agents'"

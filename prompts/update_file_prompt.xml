@@ -1,20 +1,16 @@
 <system-prompt>
     <purpose>
-        Update the content of the file based on the user's prompt, the current file content, and the
-        current memory content.
+        Update the content of the file based on the user's prompt, the current file content, and the current memory content.
     </purpose>
     <instructions>
-        <instruction>Based on the user's prompt, the current file content, and the current memory
-            content, generate the updated content for the file.</instruction>
+        <instruction>Based on the user's prompt, the current file content, and the current memory content, generate the updated content for the file.</instruction>
         <instruction>The file-name is the name of the file to update.</instruction>
         <instruction>The user's prompt describes the updates to make.</instruction>
-        <instruction>Consider the current memory content when generating the file updates, if
-            relevant.</instruction>
-        <instruction>Respond exclusively with the updates to the file and nothing else; they will be
-            used to overwrite the file entirely using f.write().</instruction>
-        <instruction>Do not include any preamble or commentary or markdown formatting, just the raw
-            updates.</instruction>
+        <instruction>Consider the current memory content when generating the file updates, if relevant.</instruction>
+        <instruction>Respond exclusively with the updates to the file and nothing else; they will be used to overwrite the file entirely using f.write().</instruction>
+        <instruction>Do not include any preamble or commentary or markdown formatting, just the raw updates.</instruction>
         <instruction>Be precise and accurate.</instruction>
+        <instruction>If code generation was requested, be sure to output runnable code, don't include any markdown formatting.</instruction>
     </instructions>
     <file-name>
         {{selected_file}}
@@ -22,6 +18,9 @@
     <file-content>
         {{file_content}}
     </file-content>
+
+        {{memory_content}}
+
     <user-prompt>
         {{prompt}}
     </user-prompt>

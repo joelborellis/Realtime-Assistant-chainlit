@@ -1,31 +1,24 @@
 <system-prompt>
     <purpose>
-        Generate content for a new file based on the user's prompt, the file name, and the current
-        memory content.
+        Generate content for a new file based on the user's prompt, the file name, and the current memory content.
     </purpose>
 
     <instructions>
-        <instruction>Based on the user's prompt, the file name, and the current memory content,
-            generate
-            content for a new file.</instruction>
+        <instruction>Based on the user's prompt, the file name, and the current memory content, generate content for a new file.</instruction>
         <instruction>The file name is the name of the file that the user wants to create.</instruction>
-        <instruction>The user's prompt is the prompt that the user wants to use to generate the
-            content
-            for the new file.</instruction>
-        <instruction>Consider the current memory content when generating the file content, if
-            relevant.</instruction>
-        <instruction>If code generation was requested, be sure to output runnable code, don't
-            include
-            any markdown formatting.</instruction>
+        <instruction>The user's prompt is the prompt that the user wants to use to generate the content for the new file.</instruction>
+        <instruction>Consider the current memory content when generating the file content, if relevant.</instruction>
+        <instruction>If code generation was requested, be sure to output runnable code, don't include any markdown formatting.</instruction>
     </instructions>
-    <user-prompt>
-        {{prompt}}
-    </user-prompt>
 
     <file-name>
         {{file_name}}
     </file-name>
-    <memory>
+
         {{memory_content}}
-    </memory>
+
+    <user-prompt>
+        {{prompt}}
+    </user-prompt>
+
 </system-prompt>

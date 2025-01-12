@@ -1,0 +1,3 @@
+{
+  "structured_outputs_info": "Check out OpenAI's official documentation on structured outputs, which introduces response formats compatible with vision inputs. Azure OpenAI Service provides an article on using structured outputs where a model follows a JSON Schema definition provided in the API call. It's recommended for function calling, extracting structured data, and more. OpenAI Cookbook offers an introduction to structured outputs and discusses how the model might refuse to fulfill requests for safety reasons."
+}

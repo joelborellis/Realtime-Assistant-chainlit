@@ -45,7 +45,7 @@ def structured_output_prompt(
         raise OpenAIError(f"OpenAI API error: {e}") from e
 
     model_used = completion.model
-    #print(f"Structured output prompt used model: {model_used}")
+    print(f"ℹ️ Structured output prompt used model: {model_used}")
 
     # Extract the message content
     if not completion.choices or not completion.choices[0].message:

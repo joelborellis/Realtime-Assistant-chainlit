@@ -1,7 +1,6 @@
 import asyncio
 import functools
 import json
-import os
 import time
 from datetime import datetime
 from enum import Enum
@@ -36,8 +35,8 @@ class ModelName(str, Enum):
 
 # Mapping from enum options to model IDs
 model_name_to_id = {
-    ModelName.state_of_the_art_model: "o1-preview",
-    ModelName.reasoning_model: "o1-mini",
+    ModelName.state_of_the_art_model: "gpt-4o",
+    ModelName.reasoning_model: "o1-preview",
     ModelName.sonnet_model: "claude-3-5-sonnet-20240620",
     ModelName.base_model: "gpt-4o",
     ModelName.fast_model: "gpt-4o-mini",
@@ -104,6 +103,7 @@ def timeit_decorator(func):
         start_time = time.perf_counter()
         model = kwargs.get("model", None)
         prompt = kwargs.get("prompt", None)
+        print(kwargs)
 
         try:
             result = await func(*args, **kwargs)
@@ -184,3 +184,34 @@ def upload_file_to_images_container(filename, file):
         raise RuntimeError(f"Failed to upload file to Azure Blob Storage: {e}")
     except Exception as e:
         raise RuntimeError(f"An unexpected error occurred during the file upload: {e}")
+
+
+def match_pattern(pattern: str, key: str) -> bool:
+    if pattern == "*":
+        return True
+    elif pattern.startswith("*") and pattern.endswith("*"):
+        return pattern[1:-1] in key
+    elif pattern.startswith("*"):
+        return key.endswith(pattern[1:])
+    elif pattern.endswith("*"):
+        return key.startswith(pattern[:-1])
+    else:
+        return pattern == key
+    
+def convert_escaped_html_to_xml(input_string):
+    """
+    Converts a string with escaped HTML entities (&lt; and &gt;) to actual XML symbols (< and >)
+    and returns the results.
+
+    Args:
+        input_string (str): The input string with escaped HTML entities.
+        output_file (str): The path to the output file.
+
+    Returns:
+        None
+    """
+    # Replace escaped HTML entities with actual symbols
+    converted_string = input_string.replace("&lt;", "<").replace("&gt;", ">")
+    
+    # Return formatted string
+    return converted_string

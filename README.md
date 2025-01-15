@@ -97,6 +97,20 @@ The assistant offers a collection of Agents (tools) (implemented as function cal
      ```plaintext
      Hey Ada, who won the 2024 baseball World Series?
      ```
+  
+8. **clipboard_to_memory**  
+   - **What it does**: Saves the contents of the clipboard to memory.  You can specify a key to use.  
+   - **Example usage**:  
+     ```plaintext
+     Hey Ada, save the contents of the clipboard to memory with the key agent architecture information.
+     ```
+
+9. **clipboard_to_file**  
+   - **What it does**: Saves the contents of the clipboard to mea file.  You can specify the format of the content for the file and type of file.  
+   - **Example usage**:  
+     ```plaintext
+     Hey Ada, save the contents of the clipboard to a markdown file.
+     ```
 
 ---
 

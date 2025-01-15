@@ -15,7 +15,7 @@ env = Environment(loader=FileSystemLoader(PROMPT_DIR), autoescape=True)
 class CreateFileResponse(BaseModel):
     file_content: str
     file_name: str
-
+    model: ModelName
 
 class CreateFileTool(BaseTool):
     def __init__(self):
@@ -38,6 +38,7 @@ class CreateFileTool(BaseTool):
                         "enum": [
                             "base_model",
                             "fast_model",
+                            "reasoning_model",
                         ],
                         "description": "The model to use for generating content.",
                     },
@@ -72,12 +73,17 @@ class CreateFileTool(BaseTool):
         )
 
         logger.info(
-            f"🍓 Memory content used for create file prompt: {convert_escaped_html_to_xml(create_content_prompt)}"
+            f"📝 Memory content used for create file prompt: {convert_escaped_html_to_xml(create_content_prompt)}"
+        )
+
+        response = await structured_output_prompt(
+                create_content_prompt, CreateFileResponse, model_name_to_id[model]
+            )
+        
+        logger.info(
+            f"✅ Create file used the model {response.model}"
         )
         
-        response, model_used = structured_output_prompt(
-            create_content_prompt, CreateFileResponse, model_name_to_id[model]
-        )
         with open(file_path, "w") as f:
             f.write(parse_markdown_backticks(response.file_content))
             
@@ -96,6 +102,7 @@ class CreateFileTool(BaseTool):
 class FileDeleteResponse(BaseModel):
     file: str
     force_delete: bool
+    model: ModelName
 
 
 class DeleteFileTool(BaseTool):
@@ -126,7 +133,7 @@ class DeleteFileTool(BaseTool):
 
     @timeit_decorator
     async def handle(
-        self, prompt: str, force_delete: bool, model: str = "base_model"
+        self, prompt: str, force_delete: bool, model: ModelName = ModelName.base_model
     ) -> dict:
         scratch_pad_dir = os.getenv("SCRATCH_PAD_DIR", "./scratchpad")
         os.makedirs(scratch_pad_dir, exist_ok=True)
@@ -138,8 +145,12 @@ class DeleteFileTool(BaseTool):
         Available files: {', '.join(available_files)}
         """
 
-        response, model_used = structured_output_prompt(
+        response = await structured_output_prompt(
             select_prompt, FileDeleteResponse, model_name_to_id[model]
+        )
+
+        logger.info(
+            f"✅ Delete file used the model {response.model}"
         )
 
         if not response.file:
@@ -158,7 +169,12 @@ class DeleteFileTool(BaseTool):
 
 class FileSelectionResponse(BaseModel):
     file: str
-    model: ModelName = ModelName.base_model
+    model: ModelName
+
+class FileUpdateResponse(BaseModel):
+    file: str
+    file_content: str
+    model: ModelName
 
 
 class UpdateFileTool(BaseTool):
@@ -178,6 +194,7 @@ class UpdateFileTool(BaseTool):
                         "enum": [
                             "base_model",
                             "fast_model",
+                            "reasoning_model",
                         ],
                         "description": "The model to use for updating the file content. Defaults to 'base_model' if not explicitly specified.",
                     },
@@ -200,11 +217,6 @@ class UpdateFileTool(BaseTool):
         available_files = os.listdir(scratch_pad_dir)
         available_files_str = ", ".join(available_files)
 
-        logger.info(
-            f"🍓 Available files in update file (list from /scratchpad): {available_files_str}"
-        )
-    
-        
         # Render select_file_prompt template
         select_file_template = env.get_template("select_file_prompt.xml")
         select_file_prompt = select_file_template.render(
@@ -217,12 +229,12 @@ class UpdateFileTool(BaseTool):
         )
         
         # Call LLM to select a file
-        file_selection_response, model_used_file_select = structured_output_prompt(
+        file_selection_response = await structured_output_prompt(
             select_file_prompt, FileSelectionResponse, model_name_to_id[model]
         )
 
         logger.info(
-            f"🍓 Select File to Update found the file: {file_selection_response.file}"
+            f"🍓 Select File to Update found the file: {file_selection_response.file} with model {file_selection_response.model}"
         )
 
         # If no file is selected
@@ -251,15 +263,15 @@ class UpdateFileTool(BaseTool):
         logger.info(f"🍓 Update file prompt: {update_file_prompt}")
         
         # Call LLM to generate file updates
-        file_update_response, model_used_chat = chat_prompt(
-            update_file_prompt, model_name_to_id[model]
+        file_update_response = await structured_output_prompt(
+            update_file_prompt, FileUpdateResponse, model_name_to_id[model]
         )
 
-        logger.info(f"🍓 File Update Response: {file_update_response}")
+        logger.info(f"✅ File Update Response updated file: {selected_file} using model: {file_update_response.model}")
 
         # Write the updated content to the file
         with open(file_path, "w") as f:
-            f.write(parse_markdown_backticks(file_update_response))
+            f.write(parse_markdown_backticks(file_update_response.file_content))
         
         elements = [
             cl.File(
@@ -269,7 +281,7 @@ class UpdateFileTool(BaseTool):
             )
         ]
 
-        await cl.Message(content=file_update_response, elements=elements).send()
+        await cl.Message(content=file_update_response.file_content, elements=elements).send()
 
         return {
             "status": "File updated",

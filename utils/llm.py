@@ -1,15 +1,18 @@
-from typing import Tuple, Union
+from typing import Tuple
 
-import openai
+from openai import RateLimitError, AsyncOpenAI
 from pydantic import BaseModel, ValidationError
 from dotenv import dotenv_values
 from openai import OpenAIError
 
+import backoff
+
 # Load environment variables
 config = dotenv_values(".env")
 
-
-def structured_output_prompt(
+###  OpenAI chat completions call with backoff for rate limits and structured outputs
+@backoff.on_exception(backoff.expo, RateLimitError)
+async def structured_output_prompt(
     prompt: str, response_format: BaseModel, model: str
 ) -> Tuple[BaseModel, str]:
     """
@@ -30,22 +33,21 @@ def structured_output_prompt(
     api_key = config.get("OPENAI_API_KEY")
     if not api_key:
         raise ValueError("OPENAI_API_KEY environment variable not found or empty.")
-
-    client = openai.OpenAI(api_key=api_key)
+    
+    # setup the OpenAI Client
+    client = AsyncOpenAI(api_key=api_key)
 
     try:
         # Using a hypothetical beta parse method as provided in original code snippet.
         # Adjust this call to the actual method available in your environment.
-        completion = client.beta.chat.completions.parse(
+        completion = await client.beta.chat.completions.parse(
             model=model,
             messages=[{"role": "user", "content": prompt}],
             response_format=response_format
         )
     except OpenAIError as e:
         raise OpenAIError(f"OpenAI API error: {e}") from e
-
-    model_used = completion.model
-    print(f"ℹ️ Structured output prompt used model: {model_used}")
+    
 
     # Extract the message content
     if not completion.choices or not completion.choices[0].message:
@@ -56,17 +58,17 @@ def structured_output_prompt(
     # Adjust parsing logic as per your actual response structure.
     content = completion.choices[0].message
 
-    # In original code, there was `message.parsed` and `message.refusal`.
-    # This seems custom. We have to adapt:
     # If you have a structured response in JSON format, parse it:
     try:
         parsed = content.parsed
+        parsed.model = completion.model  # kind of messing up the structured output concept but set the model
     except (ValidationError, ValueError) as e:
         raise ValueError(f"Failed to parse response into the given response_format: {e}") from e
 
-    return parsed, model_used
+    return parsed
 
-
+###  OpenAI chat completions call with backoff for rate limits
+@backoff.on_exception(backoff.expo, RateLimitError)
 def chat_prompt(prompt: str, model: str) -> Tuple[str, str]:
     """
     Run a chat model based on the specified model name.
@@ -82,7 +84,7 @@ def chat_prompt(prompt: str, model: str) -> Tuple[str, str]:
     if not api_key:
         raise ValueError("OPENAI_API_KEY environment variable not found or empty.")
 
-    client = openai.OpenAI(api_key=api_key)
+    client = AsyncOpenAI(api_key=api_key)
 
     try:
         completion = client.chat.completions.create(
@@ -116,10 +118,10 @@ def model_predictive_prompt(prompt: str) -> str:
     if not api_key:
         raise ValueError("OPENAI_API_KEY environment variable not found or empty.")
 
-    client = openai.OpenAI(api_key=api_key)
+    client = AsyncOpenAI(api_key=api_key)
 
     model_choices = """
-        ModelName.state_of_the_art_model: 'o1-preview',
+        ModelName.state_of_the_art_model: 'o1',
         ModelName.reasoning_model: 'o1-mini',
         ModelName.sonnet_model: 'claude-3-5-sonnet-20240620',
         ModelName.base_model: 'gpt-4o-2024-08-06',
@@ -167,7 +169,7 @@ def create_image_prompt(prompt: str, model: str) -> str:
     if not api_key:
         raise ValueError("OPENAI_API_KEY environment variable not found or empty.")
 
-    client = openai.OpenAI(api_key=api_key)
+    client = AsyncOpenAI(api_key=api_key)
 
     try:
         # This assumes the openai Python library supports `openai.Image.create` or similar.
@@ -203,7 +205,7 @@ def describe_image_prompt(prompt: str, image_url: str, model: str) -> str:
     if not api_key:
         raise ValueError("OPENAI_API_KEY environment variable not found or empty.")
 
-    client = openai.OpenAI(api_key=api_key)
+    client = AsyncOpenAI(api_key=api_key)
 
     # Assuming the API supports sending image URLs in the request.
     # Adjust according to actual API specifications.

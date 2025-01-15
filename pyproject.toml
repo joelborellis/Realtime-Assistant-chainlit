@@ -16,4 +16,5 @@ dependencies = [
     "azure-storage-blob",
     "ipython",
     "ipykernel",
+    "backoff"
 ]

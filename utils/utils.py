@@ -36,7 +36,7 @@ class ModelName(str, Enum):
 # Mapping from enum options to model IDs
 model_name_to_id = {
     ModelName.state_of_the_art_model: "gpt-4o",
-    ModelName.reasoning_model: "o1-preview",
+    ModelName.reasoning_model: "o1",
     ModelName.sonnet_model: "claude-3-5-sonnet-20240620",
     ModelName.base_model: "gpt-4o",
     ModelName.fast_model: "gpt-4o-mini",

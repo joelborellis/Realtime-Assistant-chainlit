@@ -31,17 +31,17 @@ This POC demonstrates how an assistant can execute various tasks on the user's b
 - **Multimodal Experience**  
   Speak and write to the assistant simultaneously. (Image uploads are an interesting new feature!)
 
-- **Tool Calling**  
-  Ask the assistant to perform tasks and see their output in the UI using Chainlit.
+- **Agent Calling**  
+  Ask the assistant to perform tasks and see their output in the UI using Chainlit.  
 
 - **Visual Cues**  
   Visual indicators showing when the assistant is listening or speaking (part of the Chainlit integration).
 
 ---
 
-## Tools
+## Agents
 
-The assistant offers a collection of tools (implemented as function calls). Each tool performs a specific task and returns the result in the UI.
+The assistant offers a collection of Agents (tools) (implemented as function calls). Each Agent (tool) performs a specific task and returns the result in the UI.  Each Agent (tool) has it's own instructions prompt in XML format.
 
 1. **create_file**  
    - **What it does**: Creates a file in the `scratchpad` directory.  
@@ -49,7 +49,7 @@ The assistant offers a collection of tools (implemented as function calls). Each
      ```plaintext
      Hey Ada, create me a file named "myfile.csv".
      ```
-   - Files appear in the UI, available for download.
+   - Files appear in the UI, available for download.  If you do not specify the content for a file, the Agent will use memory to try and determine some default content.
 
 2. **update_file**  
    - **What it does**: Updates the content of an existing file.  
@@ -68,7 +68,7 @@ The assistant offers a collection of tools (implemented as function calls). Each
      ```plaintext
      Hey Ada, delete the file "myfile.csv".
      ```
-   - The assistant might ask for confirmation before deleting. Use the phrase `"force delete"` to confirm.
+   - The assistant might ask for confirmation before deleting. Use the phrase `"force delete"` to confirm.  This is an example of deterministic action for the Agent.
 
 4. **generate_image**  
    - **What it does**: Creates images using a simple system prompt with an image model (currently DALL·E 3).  
@@ -88,7 +88,7 @@ The assistant offers a collection of tools (implemented as function calls). Each
    - **What it does**: Returns a random number.  
    - **Example usage**:  
      ```plaintext
-     Hey Ada, pick a number between 1 and 100.
+     Hey Ada, generate a number number between 1 and 100.
      ```
 
 7. **bing_search**  

@@ -1,4 +1,4 @@
-from utils.llm import create_image_prompt, describe_image_prompt
+from utils.llm import generate_image_prompt, describe_image_prompt
 from utils.utils import timeit_decorator, model_name_to_id, ModelName
 import chainlit as cl
 from .base_tool import BaseTool
@@ -33,13 +33,30 @@ class GenerateImageTool(BaseTool):
 
     @timeit_decorator
     async def handle(self, prompt: str, model: str = "image_model") -> dict:
-        image_url = create_image_prompt(prompt, model_name_to_id[model])
+        try:
+            # Attempt to retrieve the model ID
+            model_id = model_name_to_id[model]
+        except KeyError:
+            return {"status": "Error: Invalid model name specified"}
 
+        try:
+            # Generate the image URL
+            image_url = await generate_image_prompt(prompt, model_id)
+        except Exception as e:
+            # Handle any unforeseen errors during image generation
+            return {"status": f"Error generating image: {str(e)}"}
+
+        # Check if an image was actually generated
         if not image_url:
             return {"status": "No image generated"}
 
-        image = cl.Image(url=image_url, name="Generated Image", display="inline")
-        await cl.Message(content="Here is your image:", elements=[image]).send()
+        try:
+            # Create and send the image in a Chainlit message
+            image = cl.Image(url=image_url, name="Generated Image", display="inline")
+            await cl.Message(content="Here is your image:", elements=[image]).send()
+        except Exception as e:
+            # Handle any errors related to Chainlit message sending
+            return {"status": f"Error displaying image: {str(e)}"}
 
         return {"status": "Image generated"}
 
@@ -71,16 +88,31 @@ class DescribeImageTool(BaseTool):
         )
 
     @timeit_decorator
-    async def handle(self, prompt: str, image_url: str, model: ModelName = ModelName.base_model) -> dict:
-        print(f"In the describe function:  {prompt}:  {image_url}")
+    async def handle(
+        self, prompt: str, image_url: str, model: ModelName = ModelName.base_model
+    ) -> dict:
+        try:
+            # Log incoming parameters
+            print(f"In the describe function: {prompt} : {image_url}")
 
-        # Render update_file_prompt template
-        describe_image_template = env.get_template("describe_image_prompt.xml")
-        describe_prompt = describe_image_template.render(
-            image_url=image_url,
-            prompt=prompt
-        )
+            # Attempt to fetch and render the template
+            describe_image_template = env.get_template("describe_image_prompt.xml")
+            describe_prompt = describe_image_template.render(
+                image_url=image_url, 
+                prompt=prompt
+            )
+        except Exception as e:
+            return {"status": f"Error rendering template: {str(e)}"}
 
-        description = describe_image_prompt(describe_prompt, image_url, model_name_to_id[model])
+        try:
+            # Attempt to generate image description
+            description = await describe_image_prompt(
+                describe_prompt, image_url, model_name_to_id[model]
+            )
+        except KeyError:
+            return {"status": "Error: Invalid model name specified."}
+        except Exception as e:
+            return {"status": f"Error describing image: {str(e)}"}
 
+        # If everything succeeds, return the successful response
         return {"status": "Description created", "description": description}

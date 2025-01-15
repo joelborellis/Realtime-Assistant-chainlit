@@ -1,5 +1,6 @@
 #header > img:nth-child(2) { 
     max-height: 40px !important;
+    margin: 20px; /* Adds space around the image itself */
 }
 
 /* after opening the sidebar */

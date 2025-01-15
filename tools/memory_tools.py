@@ -1,10 +1,7 @@
 from .base_tool import BaseTool
 from utils.utils import timeit_decorator
-from dotenv import dotenv_values
 from utils.memory_management import memory_manager
 from typing import Any
-
-config = dotenv_values(".env")
 
 
 class AddToMemoryTool(BaseTool):

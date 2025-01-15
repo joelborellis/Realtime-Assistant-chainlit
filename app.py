@@ -16,6 +16,7 @@ from tools.file_tools import DeleteFileTool
 from tools.file_tools import UpdateFileTool
 from tools.image_tools import GenerateImageTool, DescribeImageTool
 from tools.memory_tools import AddToMemoryTool, IngestMemoryTool, ResetActiveMemoryTool
+from tools.clipboard_tools import ClipboardToMemoryTool, ClipboardToFileTool
 
 client = AsyncOpenAI()  
 
@@ -30,7 +31,9 @@ tools = [
     DescribeImageTool().get_tool(), # returns the def and handle
     AddToMemoryTool().get_tool(), # returns the def and handle
     IngestMemoryTool().get_tool(), # returns the def and handle
-    ResetActiveMemoryTool().get_tool() # returns the def and handle
+    ResetActiveMemoryTool().get_tool(), # returns the def and handle
+    ClipboardToMemoryTool().get_tool(), # returns the def and handle
+    ClipboardToFileTool().get_tool() # returns the def and handle
 ]  
 
 async def setup_openai_realtime():

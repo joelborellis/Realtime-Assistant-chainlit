@@ -1,5 +1,5 @@
 import os
-from utils.llm import structured_output_prompt, parse_markdown_backticks, chat_prompt
+from utils.llm import structured_output_prompt, parse_markdown_backticks
 from .base_tool import BaseTool
 from utils.utils import ModelName, model_name_to_id, timeit_decorator, convert_escaped_html_to_xml
 from pydantic import BaseModel

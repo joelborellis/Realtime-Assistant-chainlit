@@ -11,7 +11,7 @@ import backoff
 config = dotenv_values(".env")
 
 ###  OpenAI chat completions call with backoff for rate limits and structured outputs
-@backoff.on_exception(backoff.expo, RateLimitError)
+@backoff.on_exception(backoff.expo, RateLimitError, max_tries=5)
 async def structured_output_prompt(
     prompt: str, response_format: BaseModel, model: str
 ) -> Tuple[BaseModel, str]:
@@ -67,42 +67,6 @@ async def structured_output_prompt(
 
     return parsed
 
-###  OpenAI chat completions call with backoff for rate limits
-@backoff.on_exception(backoff.expo, RateLimitError)
-def chat_prompt(prompt: str, model: str) -> Tuple[str, str]:
-    """
-    Run a chat model based on the specified model name.
-
-    Args:
-        prompt (str): The prompt to send to the OpenAI API.
-        model (str): The model ID to use for the API call.
-
-    Returns:
-        Tuple[str, str]: The assistant's response and the model used.
-    """
-    api_key = config.get("OPENAI_API_KEY")
-    if not api_key:
-        raise ValueError("OPENAI_API_KEY environment variable not found or empty.")
-
-    client = AsyncOpenAI(api_key=api_key)
-
-    try:
-        completion = client.chat.completions.create(
-            model=model,
-            messages=[{"role": "user", "content": prompt}]
-        )
-    except OpenAIError as e:
-        raise OpenAIError(f"OpenAI API error: {e}") from e
-
-    model_used = completion.model
-    print(f"chat prompt used model: {model_used}")
-
-    if not completion.choices or not completion.choices[0].message:
-        raise ValueError("No response message found in completion.")
-
-    message = completion.choices[0].message
-    return message.content, model_used
-
 
 def model_predictive_prompt(prompt: str) -> str:
     """
@@ -154,7 +118,7 @@ def model_predictive_prompt(prompt: str) -> str:
     return model_selected
 
 
-def create_image_prompt(prompt: str, model: str) -> str:
+async def generate_image_prompt(prompt: str, model: str) -> str:
     """
     Call an image generation model to generate an image.
 
@@ -175,7 +139,7 @@ def create_image_prompt(prompt: str, model: str) -> str:
         # This assumes the openai Python library supports `openai.Image.create` or similar.
         # Adjust this method according to the actual image generation API.
         # If `client.images.generate` was a custom method, replace it with the actual supported method.
-        response = client.images.generate(
+        response = await client.images.generate(
             prompt=prompt,
             n=1,
             size="1024x1024"
@@ -189,7 +153,7 @@ def create_image_prompt(prompt: str, model: str) -> str:
     return image_url
 
 
-def describe_image_prompt(prompt: str, image_url: str, model: str) -> str:
+async def describe_image_prompt(prompt: str, image_url: str, model: str) -> str:
     """
     Call a model to describe an image by providing an image URL and a prompt.
 
@@ -210,7 +174,7 @@ def describe_image_prompt(prompt: str, image_url: str, model: str) -> str:
     # Assuming the API supports sending image URLs in the request.
     # Adjust according to actual API specifications.
     try:
-        response = client.chat.completions.create(
+        response = await client.chat.completions.create(
     model=model,
     messages=[
         {

@@ -1,0 +1,12 @@
+<system-prompt>
+<purpose>
+    Generate a suitable file name based on the following content: {{trimmed_content[:100]}}...
+</purpose>
+
+<instructions>
+    <instruction>Create a short, descriptive file name based on the content.</instruction>
+    <instruction>Use lowercase letters, numbers, and underscores only.</instruction>
+    <instruction>Include an appropriate file extension (e.g., .txt, .md, .py) based on the content type.</instruction>
+    <instruction>Limit the file name to 50 characters maximum, including the extension.</instruction>
+</instructions>
+</system-prompt>

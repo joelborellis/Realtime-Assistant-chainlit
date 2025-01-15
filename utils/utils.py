@@ -56,7 +56,7 @@ except json.JSONDecodeError as e:
 ai_assistant_name = personalization.get("ai_assistant_name", "Assistant")
 human_name = personalization.get("human_name", "User")
 suffix = personalization.get("system_message_suffix", "")
-voice = personalization.get("voice", "alloy")
+voice = personalization.get("voice", "alloy") # available voices Alloy, Echo, Shimmer, Ash, Coral, Sage, Verse, and Ballad
 
 # Render the realtime prompt template
 try:

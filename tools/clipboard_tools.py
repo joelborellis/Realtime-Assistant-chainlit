@@ -38,7 +38,16 @@ class ClipboardToMemoryTool(BaseTool):
         super().__init__(
             name="clipboard_to_memory",
             description="Copies the contents of the clipboard into memory.",
-            parameters={"type": "object", "properties": {}, "required": []},
+            parameters={
+                "type": "object",
+                "properties": {
+                    "key": {
+                        "type": "string",
+                        "description": "The key to use for storing the clipboard content in memory. If not provided, a default key 'clipboard_content' will be used.",
+                    },
+                },
+                "required": [],
+            },
         )
 
     @timeit_decorator
@@ -68,7 +77,7 @@ class ClipboardToFileTool(BaseTool):
     def __init__(self):
         super().__init__(
             name="clipboard_to_file",
-            description="Copies the contents of the clipboard into a file.",
+            description="Gets content from clipboard, generates a file name based on the content, and saves the content (trimmed to 1000 chars max) to a file in the scratch_pad_dir.",
             parameters={
                 "type": "object",
                 "properties": {
@@ -101,10 +110,8 @@ class ClipboardToFileTool(BaseTool):
             clipboard_to_file_prompt = clipboard_to_file_template.render(
                 trimmed_content=trimmed_content
             )
-            
-            logger.info(
-            f"🍓 Clipboard to file prompt: {clipboard_to_file_prompt}"
-            )
+
+            logger.info(f"🍓 Clipboard to file prompt: {clipboard_to_file_prompt}")
 
             file_name_response = await structured_output_prompt(
                 clipboard_to_file_prompt, FileNameResponse, model_name_to_id[model]

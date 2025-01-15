@@ -119,6 +119,10 @@ A decorator function logs the execution time of each tool/agent to `runtime_time
 - You can **reset** memory to erase all stored data.
 - Future improvements will include storing memory in databases (e.g., Cosmos DB).
 
+### Clipboard
+- You can instruct the assistant to **save** information to “memory” from your clipboard.
+- You can instruct the assistant to **save** information to a from your clipboard.
+
 ---
 
 ## Setup
@@ -162,5 +166,4 @@ A decorator function logs the execution time of each tool/agent to `runtime_time
 
 ---
 
-Happy building! If you encounter any issues, please submit an issue or open a pull request.  
-Enjoy exploring how an AI assistant can help you with real-time tasks!
+Happy building! Enjoy exploring how an AI assistant can help you with real-time tasks!

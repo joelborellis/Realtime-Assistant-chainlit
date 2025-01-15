@@ -90,7 +90,7 @@ class RealtimeAPI(RealtimeEventHandler):
 
         if self.use_azure:
             self.url = url or os.getenv("AZURE_OPENAI_URL")
-            self.api_key = api_key or os.getenv("AZURE_OPENAI_API_KEY")
+            self.api_key = api_key or os.getenv("AZURE_OPENAI_REALTIME_API_KEY")
             self.api_version = api_version
             self.deployment = deployment or os.getenv(
                 "OPENAI_DEPLOYMENT_NAME_REALTIME", "gpt-4o-realtime-preview"

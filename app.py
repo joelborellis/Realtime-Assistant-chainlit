@@ -14,7 +14,7 @@ from tools.general_tools import BingSearchTool
 from tools.file_tools import CreateFileTool
 from tools.file_tools import DeleteFileTool
 from tools.file_tools import UpdateFileTool
-from tools.image_tools import GenerateImageTool, DescribeImageTool
+from tools.image_tools import GenerateImageTool, DescribeImageTool, ProcessScreenshotsTool
 from tools.memory_tools import AddToMemoryTool, IngestMemoryTool, ResetActiveMemoryTool
 from tools.clipboard_tools import ClipboardToMemoryTool, ClipboardToFileTool
 
@@ -33,7 +33,8 @@ tools = [
     IngestMemoryTool().get_tool(), # returns the def and handle
     ResetActiveMemoryTool().get_tool(), # returns the def and handle
     ClipboardToMemoryTool().get_tool(), # returns the def and handle
-    ClipboardToFileTool().get_tool() # returns the def and handle
+    ClipboardToFileTool().get_tool(), # returns the def and handle
+    ProcessScreenshotsTool().get_tool() # returns the def and handle, passes an openaiclient
 ]  
 
 async def setup_openai_realtime():

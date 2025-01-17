@@ -6,7 +6,7 @@ import inspect
 import numpy as np
 import json
 import websockets
-from datetime import datetime, UTC
+from datetime import datetime, UTC, timezone
 from collections import defaultdict
 import base64
 import uuid
@@ -464,7 +464,7 @@ class RealtimeClient(RealtimeEventHandler):
 
     def _log_event(self, event):
         realtime_event = {
-            "time": datetime.utcnow().isoformat(),
+            "time": datetime.now(timezone.utc),
             "source": "client" if event["type"].startswith("client.") else "server",
             "event": event,
         }

@@ -4,6 +4,7 @@ from openai import RateLimitError, AsyncOpenAI
 from pydantic import BaseModel, ValidationError
 from dotenv import dotenv_values
 from openai import OpenAIError
+from markitdown import MarkItDown
 
 import backoff
 
@@ -204,6 +205,22 @@ async def describe_image_prompt(prompt: str, image_url: str, model: str) -> str:
     #print(description)
     return description.content
 
+# processing the images
+async def process_image(image_file: str, model: str):
+    
+    api_key = config.get("OPENAI_API_KEY")
+    if not api_key:
+        raise ValueError("OPENAI_API_KEY environment variable not found or empty.")
+    
+    client = AsyncOpenAI(api_key=api_key)
+    
+    print(model)
+    
+    markitdown = MarkItDown(llm_client=client, llm_model=model)
+
+    result = markitdown.convert("../screenshots/Screenshot 2023-04-03 111400.png")
+    
+    return result
 
 def parse_markdown_backticks(str) -> str:
     if "```" not in str:

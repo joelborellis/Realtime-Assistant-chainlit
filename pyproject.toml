@@ -17,5 +17,7 @@ dependencies = [
     "ipython",
     "ipykernel",
     "backoff",
-    "pyperclip"
+    "pyperclip",
+    "pandas",
+    "markitdown"
 ]

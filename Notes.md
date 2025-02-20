@@ -1,2 +1,0 @@
-- The helper.py file in literalai 0.0.623 has depricated timezone format - upgrading is not option as chainlit 2.0.0 requires this version
-- The app.py file is suppressing deprication warnings.  There is a warning from websockets and chainlit does not work with websocket v14 so leave websocket at 13.1, the warning will not cause issues with functionality

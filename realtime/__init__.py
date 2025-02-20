@@ -168,7 +168,7 @@ class RealtimeAPI(RealtimeEventHandler):
         await self.ws.send(json.dumps(event))
 
     def _generate_id(self, prefix):
-        return f"{prefix}{int(datetime.utcnow().timestamp() * 1000)}"
+        return f"{prefix}{int(datetime.now(timezone.utc).timestamp() * 1000)}"
 
     async def disconnect(self):
         if self.ws:

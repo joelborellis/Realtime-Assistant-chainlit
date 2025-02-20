@@ -1,7 +1,12 @@
 import os
 from utils.llm import structured_output_prompt, parse_markdown_backticks
 from .base_tool import BaseTool
-from utils.utils import ModelName, model_name_to_id, timeit_decorator, convert_escaped_html_to_xml
+from utils.utils import (
+    ModelName,
+    model_name_to_id,
+    timeit_decorator,
+    convert_escaped_html_to_xml,
+)
 from pydantic import BaseModel
 from chainlit.logger import logger
 from jinja2 import Environment, FileSystemLoader
@@ -12,10 +17,12 @@ from utils.memory_management import memory_manager
 PROMPT_DIR = "prompts"  # Directory where your XML templates are stored
 env = Environment(loader=FileSystemLoader(PROMPT_DIR), autoescape=True)
 
+
 class CreateFileResponse(BaseModel):
     file_content: str
     file_name: str
     model: ModelName
+
 
 class CreateFileTool(BaseTool):
     def __init__(self):
@@ -60,16 +67,14 @@ class CreateFileTool(BaseTool):
 
         # Get all memory content
         memory_content = memory_manager.get_xml_for_prompt(["*"])
-        #memory_content_xml =  convert_escaped_html_to_xml(memory_content)
+        # memory_content_xml =  convert_escaped_html_to_xml(memory_content)
 
-        #print(memory_content_xml)
-        
+        # print(memory_content_xml)
+
         # Render select_file_prompt template
         create_content_template = env.get_template("create_file_prompt.xml")
         create_content_prompt = create_content_template.render(
-            file_name=file_name,
-            prompt=prompt,
-            memory_content=memory_content
+            file_name=file_name, prompt=prompt, memory_content=memory_content
         )
 
         logger.info(
@@ -77,16 +82,14 @@ class CreateFileTool(BaseTool):
         )
 
         response = await structured_output_prompt(
-                create_content_prompt, CreateFileResponse, model_name_to_id[model]
-            )
-        
-        logger.info(
-            f"✅ Create file used the model {response.model}"
+            create_content_prompt, CreateFileResponse, model_name_to_id[model]
         )
-        
+
+        logger.info(f"✅ Create file used the model {response.model}")
+
         with open(file_path, "w") as f:
             f.write(parse_markdown_backticks(response.file_content))
-            
+
         elements = [
             cl.File(
                 name=response.file_name,
@@ -149,9 +152,7 @@ class DeleteFileTool(BaseTool):
             select_prompt, FileDeleteResponse, model_name_to_id[model]
         )
 
-        logger.info(
-            f"✅ Delete file used the model {response.model}"
-        )
+        logger.info(f"✅ Delete file used the model {response.model}")
 
         if not response.file:
             return {"status": "No matching file found"}
@@ -170,6 +171,7 @@ class DeleteFileTool(BaseTool):
 class FileSelectionResponse(BaseModel):
     file: str
     model: ModelName
+
 
 class FileUpdateResponse(BaseModel):
     file: str
@@ -220,14 +222,11 @@ class UpdateFileTool(BaseTool):
         # Render select_file_prompt template
         select_file_template = env.get_template("select_file_prompt.xml")
         select_file_prompt = select_file_template.render(
-            available_files_str=available_files_str,
-            prompt=prompt
+            available_files_str=available_files_str, prompt=prompt
         )
 
-        logger.info(
-            f"🍓 Select file prompt: {select_file_prompt}"
-        )
-        
+        logger.info(f"🍓 Select file prompt: {select_file_prompt}")
+
         # Call LLM to select a file
         file_selection_response = await structured_output_prompt(
             select_file_prompt, FileSelectionResponse, model_name_to_id[model]
@@ -247,7 +246,7 @@ class UpdateFileTool(BaseTool):
         # Read the content of the selected file
         with open(file_path, "r") as f:
             file_content = f.read()
-            
+
         # Get all memory content
         memory_content = memory_manager.get_xml_for_prompt(["*"])
 
@@ -257,22 +256,24 @@ class UpdateFileTool(BaseTool):
             selected_file=selected_file,
             file_content=file_content,
             prompt=prompt,
-            memory_content=memory_content
+            memory_content=memory_content,
         )
 
         logger.info(f"🍓 Update file prompt: {update_file_prompt}")
-        
+
         # Call LLM to generate file updates
         file_update_response = await structured_output_prompt(
             update_file_prompt, FileUpdateResponse, model_name_to_id[model]
         )
 
-        logger.info(f"✅ File Update Response updated file: {selected_file} using model: {file_update_response.model}")
+        logger.info(
+            f"✅ File Update Response updated file: {selected_file} using model: {file_update_response.model}"
+        )
 
         # Write the updated content to the file
         with open(file_path, "w") as f:
             f.write(parse_markdown_backticks(file_update_response.file_content))
-        
+
         elements = [
             cl.File(
                 name=selected_file,
@@ -281,9 +282,102 @@ class UpdateFileTool(BaseTool):
             )
         ]
 
-        await cl.Message(content=file_update_response.file_content, elements=elements).send()
+        await cl.Message(
+            content=file_update_response.file_content, elements=elements
+        ).send()
 
         return {
             "status": "File updated",
             "file_name": selected_file,
+        }
+
+
+class IngestFileTool(BaseTool):
+    def __init__(self):
+        super().__init__(
+            name="ingest_file",
+            description="Selects a file based on the user's prompt, reads its content, and returns the file data.",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "prompt": {
+                        "type": "string",
+                        "description": "The user's prompt describing which file to ingest.",
+                    },
+                    "model": {
+                        "type": "string",
+                        "enum": [
+                            "base_model",
+                            "fast_model",
+                        ],
+                        "description": "The model to use for updating the file content. Defaults to 'base_model' if not explicitly specified.",
+                    },
+                },
+                "required": ["prompt"],
+            },
+        )
+
+    @timeit_decorator
+    async def handle(
+        self, prompt: str, model: ModelName = ModelName.base_model
+    ) -> dict:
+        """
+        Selects a file based on the user's prompt, reads its content, and returns the file data.
+        """
+        scratch_pad_dir = os.getenv("SCRATCH_PAD_DIR", "./scratchpad")
+        os.makedirs(scratch_pad_dir, exist_ok=True)
+
+        # List available files
+        available_files = os.listdir(scratch_pad_dir)
+        available_files_str = ", ".join(available_files)
+
+        # Render select_file_prompt template
+        select_file_template = env.get_template("select_file_prompt.xml")
+        select_file_prompt = select_file_template.render(
+            available_files_str=available_files_str, prompt=prompt
+        )
+
+        logger.info(f"🍓 Select file prompt: {select_file_prompt}")
+
+        # Call LLM to select a file
+        file_selection_response = await structured_output_prompt(
+            select_file_prompt, FileSelectionResponse, model_name_to_id[model]
+        )
+
+        logger.info(
+            f"🍓 Select File to Ingest found the file: {file_selection_response.file} with model {file_selection_response.model}"
+        )
+
+        # If no file is selected
+        if not file_selection_response.file:
+            return {
+                "ingested_content": None,
+                "message": "No matching file found for the given prompt.",
+                "success": False,
+            }
+
+        file_path = os.path.join(scratch_pad_dir, file_selection_response.file)
+
+        if not os.path.exists(file_path):
+            return {
+                "ingested_content": None,
+                "message": f"File '{file_selection_response.file}' does not exist in '{scratch_pad_dir}'.",
+                "success": False,
+            }
+
+        # Read the file content
+        try:
+            with open(file_path, "r") as f:
+                file_content = f.read()
+        except Exception as e:
+            return {
+                "ingested_content": None,
+                "message": f"Failed to read the file: {str(e)}",
+                "success": False,
+            }
+
+        return {
+            "ingested_content": file_content,
+            "message": "Successfully ingested content",
+            "success": True,
         }

@@ -1,6 +1,7 @@
 import asyncio
 from openai import AsyncOpenAI
 from uuid import uuid4
+import warnings
 
 import chainlit as cl
 from chainlit.logger import logger
@@ -11,12 +12,12 @@ from utils.utils import voice, upload_file_to_images_container, realtime_prompt
 from tools.general_tools import GetCurrentTimeTool
 from tools.general_tools import GetRandomNumberTool
 from tools.general_tools import BingSearchTool
-from tools.file_tools import CreateFileTool
-from tools.file_tools import DeleteFileTool
-from tools.file_tools import UpdateFileTool
+from tools.file_tools import CreateFileTool, DeleteFileTool, IngestFileTool, UpdateFileTool
 from tools.image_tools import GenerateImageTool, DescribeImageTool, ProcessScreenshotsTool
 from tools.memory_tools import AddToMemoryTool, IngestMemoryTool, ResetActiveMemoryTool
 from tools.clipboard_tools import ClipboardToMemoryTool, ClipboardToFileTool
+
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 client = AsyncOpenAI()  
 
@@ -34,7 +35,8 @@ tools = [
     ResetActiveMemoryTool().get_tool(), # returns the def and handle
     ClipboardToMemoryTool().get_tool(), # returns the def and handle
     ClipboardToFileTool().get_tool(), # returns the def and handle
-    ProcessScreenshotsTool().get_tool() # returns the def and handle, passes an openaiclient
+    ProcessScreenshotsTool().get_tool(), # returns the def and handle
+    IngestFileTool().get_tool() # returns the def and handle
 ]  
 
 async def setup_openai_realtime():

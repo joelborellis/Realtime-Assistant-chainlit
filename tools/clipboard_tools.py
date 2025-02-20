@@ -94,7 +94,8 @@ class ClipboardToFileTool(BaseTool):
     @timeit_decorator
     async def handle(self, model: ModelName = ModelName.base_model) -> dict:
 
-        SCRATCHPAD_DIR = config.get("SCRATCH_PAD_DIR", "./scratchpad")
+        scratch_pad_dir = os.getenv("SCRATCH_PAD_DIR", "./scratchpad")
+        os.makedirs(scratch_pad_dir, exist_ok=True)
 
         try:
             # Get content from clipboard
@@ -123,7 +124,7 @@ class ClipboardToFileTool(BaseTool):
             file_name = file_name[:50]  # Limit to 50 characters
 
             # Save to file
-            file_path = os.path.join(SCRATCHPAD_DIR, file_name)
+            file_path = os.path.join(scratch_pad_dir, file_name)
             with open(file_path, "w") as file:
                 file.write(content)
 
